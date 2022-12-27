@@ -1,0 +1,5 @@
+2022-12-25 10:05:58,306:DEBUG.GET_RSS_DATA:DEBUG=>Ссылки на источники прочитаны из /home/fedorov/mypy/dataeng/fin-prj-01/config/rss_links.csv<=2385924819.py->read_config[8]
+2022-12-25 10:05:58,343:DEBUG.GET_RSS_DATA:DEBUG=>rss_dir_name = lenta.ru|rss|<=277269146.py->rss_dir_prepare[9]
+2022-12-25 10:05:59,158:DEBUG.GET_RSS_DATA:DEBUG=>Sun, 25 Dec 2022 09:52:45 +0300<=1550899086.py->convert_to_tz_datetime[12]
+2022-12-25 10:05:59,166:DEBUG.GET_RSS_DATA:DEBUG=>Sat, 24 Dec 2022 11:02:00 +0300<=1550899086.py->convert_to_tz_datetime[12]
+2022-12-25 10:05:59,314:DEBUG.GET_RSS_DATA:DEBUG=>Записано в файл /home/fedorov/mypy/dataeng/fin-prj-01/data/lenta.ru|rss|/{"to"|"2022-12-25_09-52-45", "from"|"2022-12-24_11-02-00"}.json<=4114205598.py-><module>[7]
