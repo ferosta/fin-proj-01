@@ -1,0 +1,76 @@
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "/home/fedorov/mypy/dataeng/fin-prj-01/prod/get_rss_data.py", line 263, in get_all_rss_data
+    rss_urls = read_config(CONFIG_FILE_NAME)
+  File "/home/fedorov/mypy/dataeng/fin-prj-01/prod/get_rss_data.py", line 131, in read_config
+    df_config = pd.read_csv(CONFIG_FILE_NAME, header=None  )
+  File "/home/fedorov/anaconda3/envs/newconda/lib/python3.10/site-packages/pandas/util/_decorators.py", line 311, in wrapper
+    return func(*args, **kwargs)
+  File "/home/fedorov/anaconda3/envs/newconda/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 680, in read_csv
+    return _read(filepath_or_buffer, kwds)
+  File "/home/fedorov/anaconda3/envs/newconda/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 575, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+  File "/home/fedorov/anaconda3/envs/newconda/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 934, in __init__
+    self._engine = self._make_engine(f, self.engine)
+  File "/home/fedorov/anaconda3/envs/newconda/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 1218, in _make_engine
+    self.handles = get_handle(  # type: ignore[call-overload]
+  File "/home/fedorov/anaconda3/envs/newconda/lib/python3.10/site-packages/pandas/io/common.py", line 786, in get_handle
+    handle = open(
+FileNotFoundError: [Errno 2] No such file or directory: '/home/fedorov/mypy/dataeng/fin-prj-01/prod/config/rss_links.csv'
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "/home/fedorov/mypy/dataeng/fin-prj-01/prod/get_rss_data.py", line 263, in get_all_rss_data
+    rss_urls = read_config(CONFIG_FILE_NAME)
+  File "/home/fedorov/mypy/dataeng/fin-prj-01/prod/get_rss_data.py", line 131, in read_config
+    df_config = pd.read_csv(CONFIG_FILE_NAME, header=None  )
+  File "/home/fedorov/anaconda3/envs/newconda/lib/python3.10/site-packages/pandas/util/_decorators.py", line 311, in wrapper
+    return func(*args, **kwargs)
+  File "/home/fedorov/anaconda3/envs/newconda/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 680, in read_csv
+    return _read(filepath_or_buffer, kwds)
+  File "/home/fedorov/anaconda3/envs/newconda/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 575, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+  File "/home/fedorov/anaconda3/envs/newconda/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 934, in __init__
+    self._engine = self._make_engine(f, self.engine)
+  File "/home/fedorov/anaconda3/envs/newconda/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 1218, in _make_engine
+    self.handles = get_handle(  # type: ignore[call-overload]
+  File "/home/fedorov/anaconda3/envs/newconda/lib/python3.10/site-packages/pandas/io/common.py", line 786, in get_handle
+    handle = open(
+FileNotFoundError: [Errno 2] No such file or directory: '/home/fedorov/mypy/dataeng/fin-prj-01/prod/config/rss_links.csv'
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "/home/fedorov/mypy/dataeng/fin-prj-01/prod/get_rss_data.py", line 263, in get_all_rss_data
+    rss_urls = read_config(CONFIG_FILE_NAME)
+  File "/home/fedorov/mypy/dataeng/fin-prj-01/prod/get_rss_data.py", line 131, in read_config
+    df_config = pd.read_csv(CONFIG_FILE_NAME, header=None  )
+  File "/home/fedorov/anaconda3/envs/newconda/lib/python3.10/site-packages/pandas/util/_decorators.py", line 311, in wrapper
+    return func(*args, **kwargs)
+  File "/home/fedorov/anaconda3/envs/newconda/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 680, in read_csv
+    return _read(filepath_or_buffer, kwds)
+  File "/home/fedorov/anaconda3/envs/newconda/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 575, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+  File "/home/fedorov/anaconda3/envs/newconda/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 934, in __init__
+    self._engine = self._make_engine(f, self.engine)
+  File "/home/fedorov/anaconda3/envs/newconda/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 1218, in _make_engine
+    self.handles = get_handle(  # type: ignore[call-overload]
+  File "/home/fedorov/anaconda3/envs/newconda/lib/python3.10/site-packages/pandas/io/common.py", line 786, in get_handle
+    handle = open(
+FileNotFoundError: [Errno 2] No such file or directory: '/home/fedorov/mypy/dataeng/fin-prj-01/prod/config/rss_links.csv'
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "/home/fedorov/mypy/dataeng/fin-prj-01/prod/get_rss_data.py", line 263, in get_all_rss_data
+    rss_urls = read_config(CONFIG_FILE_NAME)
+  File "/home/fedorov/mypy/dataeng/fin-prj-01/prod/get_rss_data.py", line 131, in read_config
+    df_config = pd.read_csv(CONFIG_FILE_NAME, header=None  )
+  File "/home/fedorov/anaconda3/envs/newconda/lib/python3.10/site-packages/pandas/util/_decorators.py", line 311, in wrapper
+    return func(*args, **kwargs)
+  File "/home/fedorov/anaconda3/envs/newconda/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 680, in read_csv
+    return _read(filepath_or_buffer, kwds)
+  File "/home/fedorov/anaconda3/envs/newconda/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 575, in _read
+    parser = TextFileReader(filepath_or_buffer, **kwds)
+  File "/home/fedorov/anaconda3/envs/newconda/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 934, in __init__
+    self._engine = self._make_engine(f, self.engine)
+  File "/home/fedorov/anaconda3/envs/newconda/lib/python3.10/site-packages/pandas/io/parsers/readers.py", line 1218, in _make_engine
+    self.handles = get_handle(  # type: ignore[call-overload]
+  File "/home/fedorov/anaconda3/envs/newconda/lib/python3.10/site-packages/pandas/io/common.py", line 786, in get_handle
+    handle = open(
+FileNotFoundError: [Errno 2] No such file or directory: '/home/fedorov/mypy/dataeng/fin-prj-01/prod/config/rss_links.csv'
