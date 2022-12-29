@@ -4,7 +4,3 @@
 2022-12-29 08:15:09,786:INFO.GET_RSS_DATA:INFO=>=== Начало загрузки данных ===<=get_rss_data.py->get_all_rss_data[261]
 2022-12-29 12:15:34,543:INFO.GET_RSS_DATA:INFO=>=== Начало загрузки данных ===<=get_rss_data.py->get_all_rss_data[261]
 2022-12-29 12:15:39,663:INFO.GET_RSS_DATA:INFO=>=== Данные загрузили. Кол-во источников 10 ===<=get_rss_data.py->get_all_rss_data[276]
-2022-12-29 16:15:34,908:INFO.GET_RSS_DATA:INFO=>=== Начало загрузки данных ===<=get_rss_data.py->get_all_rss_data[261]
-2022-12-29 16:15:39,820:INFO.GET_RSS_DATA:INFO=>=== Данные загрузили. Кол-во источников 10 ===<=get_rss_data.py->get_all_rss_data[276]
-2022-12-29 20:15:10,381:INFO.GET_RSS_DATA:INFO=>=== Начало загрузки данных ===<=get_rss_data.py->get_all_rss_data[261]
-2022-12-29 20:15:15,004:INFO.GET_RSS_DATA:INFO=>=== Данные загрузили. Кол-во источников 10 ===<=get_rss_data.py->get_all_rss_data[276]

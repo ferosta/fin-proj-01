@@ -116,13 +116,13 @@ logger = logging.getLogger("INFO."+PROG_NAME)
 
 # %% tags=[]
 # конфигурационные настройки
-CONFIG_FILE_NAME = os.path.abspath(u'./config/rss_links.csv')
-DATA_DIR_NAME = os.path.abspath(u'./data')
+CONFIG_FILE_NAME = os.path.abspath(u'../config/rss_links.csv')
+DATA_DIR_NAME = os.path.abspath(u'../data')
 
 PGS_LGIN = 'postgres'
 PGS_PSWD = 'postgres'
 PGS_DB = 'postgres'
-PGS_ADDR =  '172.17.0.1' #'192.168.144.9'
+PGS_ADDR =  '172.17.0.1'
 PGS_PORT = 5440
 
 SQL_ENGINE = create_engine(f'postgresql://{PGS_LGIN}:{PGS_PSWD}@localhost:{PGS_PORT}/{PGS_DB}')
@@ -264,7 +264,7 @@ def save_rss_feed(feed_dict : dict, dir_to_save :str):
 # %% [markdown] jp-MarkdownHeadingCollapsed=true tags=[]
 # # ** Загрузка данных из всех источников RSS и запись их в файлы
 
-# %% tags=[]
+# %% tags=[] jupyter={"outputs_hidden": true}
 def get_all_rss_data():
     """ Получение данных из всех источников и запись их в файлы
         Для CRONa
@@ -577,7 +577,7 @@ def load_all_feeddirs_directly_to_sql():
 # %% [markdown] tags=[]
 # ## ** Инкрементальная Загрузка данных для всех источников RSS СРАЗУ в SQL
 
-# %% tags=[]
+# %% tags=[] jupyter={"outputs_hidden": true}
 def load_newest_feeddirs_directly_to_sql():
     """ Загрузка самых новых данных (самый ноывй файл) из папок источников непосредственно в SQL  """
     

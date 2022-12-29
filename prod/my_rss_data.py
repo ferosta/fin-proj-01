@@ -13,6 +13,9 @@
 #     name: python3
 # ---
 
+# %% [markdown] tags=[]
+# # Библиотеки
+
 # %% tags=[]
 from rss_parser import Parser
 from requests import get
@@ -22,9 +25,11 @@ import json
 import time
 from datetime import datetime, timezone
 
-import sqlalchemy
-from sqlalchemy import create_engine, MetaData,Table, Column, Numeric, Integer, VARCHAR, text
+import sqlalchemy as sa
+from sqlalchemy import create_engine, MetaData,Table, Column, Numeric, Integer, VARCHAR, text, DateTime 
 from sqlalchemy.engine import result
+
+import errno
 
 
 # %% [markdown] tags=[]
@@ -103,21 +108,21 @@ dictLogConfig = {
 logging.config.dictConfig(dictLogConfig)
 
 
-# logger = logging.getLogger("INFO."+PROG_NAME)
-logger = logging.getLogger("DEBUG."+PROG_NAME)
+logger = logging.getLogger("INFO."+PROG_NAME)
+# logger = logging.getLogger("DEBUG."+PROG_NAME)
 
-# %% [markdown] jp-MarkdownHeadingCollapsed=true tags=[]
+# %% [markdown] jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true
 # ## Глобальные переменные
 
 # %% tags=[]
 # конфигурационные настройки
-CONFIG_FILE_NAME = os.path.abspath(u'./config/rss_links.csv')
-DATA_DIR_NAME = os.path.abspath(u'./data')
+CONFIG_FILE_NAME = os.path.abspath(u'../config/rss_links.csv')
+DATA_DIR_NAME = os.path.abspath(u'../data')
 
 PGS_LGIN = 'postgres'
 PGS_PSWD = 'postgres'
 PGS_DB = 'postgres'
-PGS_ADDR = ' 192.168.144.9' #172.17.0.1
+PGS_ADDR =  '172.17.0.1'
 PGS_PORT = 5440
 
 SQL_ENGINE = create_engine(f'postgresql://{PGS_LGIN}:{PGS_PSWD}@localhost:{PGS_PORT}/{PGS_DB}')
@@ -126,7 +131,7 @@ SQL_ENGINE = create_engine(f'postgresql://{PGS_LGIN}:{PGS_PSWD}@localhost:{PGS_P
 # %% [markdown] jp-MarkdownHeadingCollapsed=true tags=[]
 # # Чтение конфига с адресами источников РСС
 
-# %% tags=[]
+# %% tags=[] jupyter={"source_hidden": true}
 # читаем конфиг со ссылками на источники
 def read_config(CONFIG_FILE_NAME):
     """читаем конфиг со ссылками на источники
@@ -145,7 +150,7 @@ def read_config(CONFIG_FILE_NAME):
 # %% [markdown] jp-MarkdownHeadingCollapsed=true tags=[]
 # # Подготовка первичного хранилища для данных из источников
 
-# %% tags=[]
+# %% tags=[] jupyter={"source_hidden": true}
 def rssname_to_dirname(rss_url:str):
     """ из адреса ссылки на источник делает имя папки для хранения фидов из этого источника
         Результат: название папки с фидами источника
@@ -185,7 +190,7 @@ def rss_dir_prepare(rss_url):
 # %% [markdown] jp-MarkdownHeadingCollapsed=true tags=[]
 # # Получение данных из источника по ссылке 
 
-# %% tags=[]
+# %% tags=[] jupyter={"source_hidden": true}
 # получение данных из источника по ссылке rss_url 
 def get_rss(url : str):
     """ получение данных из источника по ссылке rss_url 
@@ -206,7 +211,7 @@ def get_rss(url : str):
 # %% [markdown] jp-MarkdownHeadingCollapsed=true tags=[]
 # # Сохранение полученных из истончика данных RSS в файл
 
-# %% tags=[]
+# %% tags=[] jupyter={"source_hidden": true}
 
 # преобразование даты из строки в datetime с timezone
 def convert_to_tz_datetime(dt : str): 
@@ -257,11 +262,13 @@ def save_rss_feed(feed_dict : dict, dir_to_save :str):
 
 
 # %% [markdown] jp-MarkdownHeadingCollapsed=true tags=[]
-# # Загрузка данных из всех источников RSS и запись их в файлы
+# # ** Загрузка данных из всех источников RSS и запись их в файлы
 
-# %% tags=[]
+# %% tags=[] jupyter={"outputs_hidden": true}
 def get_all_rss_data():
-    """ Получение данных из всех источников и запись их в файлы"""
+    """ Получение данных из всех источников и запись их в файлы
+        Для CRONa
+    """
     logger.info('=== Начало загрузки данных ===')
     # читаем конфиг с адресами источников РСС
     rss_urls = read_config(CONFIG_FILE_NAME)
@@ -280,10 +287,9 @@ def get_all_rss_data():
     logger.info(f'=== Данные загрузили. Кол-во источников {len(rss_urls)} ===')
         
 
-# Тест:
-if "DEBUG" in logger.name:
-    get_all_rss_data()
-
+# # Тест:
+# if "DEBUG" in logger.name:
+#     get_all_rss_data()
 
 # %% [markdown] tags=[]
 # # Инициализирующая Загрузка данных из файлов в хранилище (SQL БД)
@@ -291,10 +297,10 @@ if "DEBUG" in logger.name:
 # %% [markdown] jp-MarkdownHeadingCollapsed=true tags=[]
 # ## Прочитать файл feed и сделать из него таблицу пандас
 
-# %% tags=[]
+# %% tags=[] jupyter={"source_hidden": true}
 # прочитать из фид-файла и записать в пандас датафрейм
 def feedfile_to_pandas(rss_url:str, rss_file_name:str):
-    """ Читает json файл с сохраненным feed и преобразует его в таблицу пандас
+    """ Читает json файл с сохраненнымto_list преобразует его в таблицу пандас
         rss_url - название папки с файлами-фидами источника
         rss_file_name - имя файла с фидом
         Результат: таблица пандас
@@ -317,6 +323,8 @@ def feedfile_to_pandas(rss_url:str, rss_file_name:str):
     df = pd.json_normalize(feed)[columns]
     # добавляем признак источника
     df['source'] = rss_dirname
+    df['publish_date'] = pd.to_datetime(df['publish_date'])
+    df['hash'] = pd.util.hash_pandas_object(df[['title','category', 'source']]).astype('str')
     
     logger.debug(f'Из файла {feed_filename} получили таблицу, кол-во строк {len(df)}.')
     return df
@@ -328,69 +336,9 @@ def feedfile_to_pandas(rss_url:str, rss_file_name:str):
 # df1
 
 # %% [markdown] tags=[]
-# ## ???(SQL) Начальная инициализация: Объединить все файлы из папки источника рсс в таблицы в БД
+# ## 1. ** Начальная инициализация через Pandas: Объединить в Pandas все файлы из папки источника рсс и записать результат в хранилище
 
-# %% tags=[]
-# df0.to_sql('regnum.ru|rss'+'0', SQL_ENGINE, if_exists='replace')
-# df1.to_sql('regnum.ru|rss'+'1', SQL_ENGINE, if_exists='replace')
-# SQL_ENGINE.table_names()
-# sql =  text("""
-# SELECT * from "regnum.ru|rss" LIMIT 5
-           
-#            """)
-# # results = SQL_ENGINE.execute(sql)
-# # # View the records
-# # for record in results:
-# #     print("\n", record)
-
-
-
-# %%
-# def join_all_feedfiles_to_SQL(rss_url: str):
-#     """" Взять все файлы с фидами в папке рсс и объединить их, убрав повторения, записав в основное хранилище SQL
-#         Результат: готовая начальная SQL-таблица
-#     """
-#     # подготавливаем имя папки для чтения скачанных из РСС данных - отдельных файлов
-#     rss_dirname = rssname_to_dirname(rss_url) #rss_url.replace(u'https://', "").replace(u"/","|") # rss_dir_prepare(rss_url)
-#     abs_rss_dirname = os.path.join(DATA_DIR_NAME, rss_dirname)
-    
-#     # получаем список сохраненных файлов
-#     list_dir = [ fn for fn in sorted( os.listdir(abs_rss_dirname), reverse=True) if '.json' in fn]
-#     logger.debug(f'Прочитали директорию {abs_rss_dirname}. Кол-во файлов: {len(list_dir)}. Список: {list_dir}')
-    
-    
-#     #подготовка таблицы в БД
-#     engine = 
-    
-#     for rf in list_dir:
-#         # получаем датафрейм пандас для файла
-#         df = feedfile_to_pandas(rss_url, rf)
-        
-#         #для отладки инфо: превая и последняя запись датафрефма
-#         str_fst = df.iloc[0,:][['publish_date', 'title']].to_string().replace('  ',"").replace('publish_date',"").replace('\ntitle',"")[:50]
-#         str_lst = df.iloc[-1,:][['publish_date', 'title']].to_string().replace('  ',"").replace('publish_date',"").replace('\ntitle',"")[:50]
-#         logger.debug(f'Таблица для файла:{rf}, строк:{len(df)}, нач.:{str_fst}, кон.:{str_lst}')
-#         # объединяем полученное с имеющимся 
-#         # if df_rez.empty:
-#         #     df_rez = df
-#         #     logger.debug(f'Начальная инициализация пустой таблицы')
-#         df_rez = pd.concat([df_rez, df], ignore_index=True )
-        
-#         df.to_sql(,SQL_ENGINE)
-        
-        
-    
-    
-#     logger.debug(f'Сформировали сводную таблицу для файлов в {abs_rss_dirname}. Кол-во строк: {len(df_rez)}')
-#     df_rez.drop_duplicates(ignore_index=True, inplace=True)
-#     logger.debug(f'После удаления дубликатов: кол-во строк: {len(df_rez)}')
-    
-#     return df_rez
-
-# %% [markdown] tags=[]
-# ## 1. (Pandas) Начальная инициализация: Объединить все файлы из папки источника рсс и записать результат в хранилище
-
-# %% tags=[]
+# %% tags=[] jupyter={"source_hidden": true}
 def join_all_feedfiles_pandas_sql(rss_url: str):
     """ взять все файлы с фидами в папке рсс, объединить их, убрав повторения и приготовить к записи в хранилище (?БД)
         Результат: таблица пандас с уникальными записями из всех файлов в папке источника
@@ -409,7 +357,7 @@ def join_all_feedfiles_pandas_sql(rss_url: str):
         # получаем датафрейм пандас для файла
         df = feedfile_to_pandas(rss_url, rf)
         #дату из строки делаем датой
-        df['publish_date'] = pd.to_datetime(df['publish_date'])
+        # df['publish_date'] = pd.to_datetime(df['publish_date'])
         
         #для отладки инфо: превая и последняя запись датафрефма
         str_fst = df.iloc[0,:][['publish_date', 'title']].to_string().replace('  ',"").replace('publish_date',"").replace('\ntitle',"")[:50]
@@ -419,29 +367,164 @@ def join_all_feedfiles_pandas_sql(rss_url: str):
         if df_rez.empty:
             df_rez = df
             logger.debug(f'Начальная инициализация пустой таблицы')
-        df_rez = pd.concat([df_rez, df], ignore_index=True )
+        df_rez = pd.concat([df_rez, df], ignore_index=True ).df_rez.drop_duplicates(ignore_index=True)
     
     logger.debug(f'Сформировали сводную таблицу для файлов в {abs_rss_dirname}. Кол-во строк: {len(df_rez)}')
-    df_rez.drop_duplicates(ignore_index=True, inplace=True)
-    logger.debug(f'После удаления дубликатов: кол-во строк: {len(df_rez)}')
+    # df_rez.drop_duplicates(ignore_index=True, inplace=True)
+    # logger.debug(f'После удаления дубликатов: кол-во строк: {len(df_rez)}')
     
     # добавляем результат в БД
-    df_rez.to_sql(rss_dirname, SQL_ENGINE, if_exists='replace')
+    df_rez.to_sql(rss_dirname, SQL_ENGINE, if_exists='replace' )
     logger.debug(f'Добавлено в БД в таблицу: {rss_dirname}')
     
     return df_rez
 
 # # тест
-# rss_url = 'https://regnum.ru/rss'#
-# df_rez = join_all_feedfiles_pandas_sql(rss_url)
+# if "DEBUG" in logger.name:
+    # rss_url = 'https://regnum.ru/rss'#
+    # df_rez = join_all_feedfiles_pandas_sql(rss_url)
     
     
 
 # %% [markdown] tags=[]
-# ## Загрузка данных из всех файлов всех папок источников RSS в SQL через pandas
+# ## 2. ** Начальная инициализация через SQL: Каждый файлы из папки источника рсс добавить в SQL хранилище, убрав дубликаты
 
-# %% jupyter={"outputs_hidden": true} tags=[]
-def load_all_feeddirs_to_sql():
+# %% tags=[]
+def insert_all_feedfiles_sql(rss_url: str):
+    """ брать по очереди файлы с фидами в папке рсс и вставлять в SQL таблицу, избегая повторений
+        Результат: SQL таблица с уникальными записями из всех файлов в папке источника
+        
+        от insert_newest_feedfiles_by_sql отличается только тем, что берутся все файлы , а там только превый.
+        Можно сделать одну функцию и через параметр управлять количеством файлов. 
+    """
+    # подготавливаем имя папки для чтения скачанных из РСС данных - отдельных файлов
+    rss_dirname = rssname_to_dirname(rss_url) #rss_url.replace(u'https://', "").replace(u"/","|") # rss_dir_prepare(rss_url)
+    abs_rss_dirname = os.path.join(DATA_DIR_NAME, rss_dirname)
+    
+    # поскольку это начальная инициализация, то имеющуюся SQL таблицу удаляем
+    q = f'DROP TABLE IF EXISTS "{rss_dirname}"'
+    with SQL_ENGINE.connect() as con:
+            res = con.execute(q)
+    
+    # получаем список сохраненных файлов
+    list_dir = [ fn for fn in sorted( os.listdir(abs_rss_dirname), reverse=True) if '.json' in fn]
+    logger.debug(f'Прочитали директорию {abs_rss_dirname}. Кол-во файлов: {len(list_dir)}. Список: {list_dir}')
+    
+    for rf in list_dir:
+        # получаем датафрейм пандас для файла
+        df = feedfile_to_pandas(rss_url, rf)
+                
+        # #для отладки инфо: превая и последняя запись датафрефма
+        # str_fst = df.iloc[0,:][['publish_date', 'title']].to_string().replace('  ',"").replace('publish_date',"").replace('\ntitle',"")[:50]
+        # str_lst = df.iloc[-1,:][['publish_date', 'title']].to_string().replace('  ',"").replace('publish_date',"").replace('\ntitle',"")[:50]
+        # logger.debug(f'Таблица для файла:{rf}, строк:{len(df)}, нач.:{str_fst}, кон.:{str_lst}')
+        # объединяем полученное с имеющимся 
+        # if df_rez.empty:
+        #     df_rez = df
+        #     logger.debug(f'Начальная инициализация пустой таблицы')
+        # df_rez = pd.concat([df_rez, df], ignore_index=True ).df_rez.drop_duplicates(ignore_index=True)
+        
+        # если sql таблица с данными для этого источника еще не создана - создаем новую, иначе - дописываем
+        if rss_dirname not in sa.inspect(SQL_ENGINE).get_table_names():
+            # вставляем данные из пандаса прямо в новую создаваемуб ОСНОВНУЮ таблицу для данного источника
+            df.to_sql(rss_dirname, SQL_ENGINE, if_exists='replace', index=False)
+            # делаем первичным ключем - хэш, чтобы записи не повторялись
+            q = f'ALTER TABLE public."{rss_dirname}" ADD CONSTRAINT "{rss_dirname}_pk" PRIMARY KEY (hash);'
+            
+        else:
+            # вставляем данные из пандаса прямо в новую создаваемуб ВРЕМЕННУЮ таблицу
+            tmp_dbname = "tmp."+rss_dirname
+            df.to_sql(tmp_dbname, SQL_ENGINE, if_exists='replace', index=False)
+            q = f'INSERT INTO "{rss_dirname}" SELECT * FROM "{tmp_dbname}" WHERE hash NOT IN (SELECT hash FROM "{rss_dirname}")'
+            
+        # выполняем сформированный SQl запрос
+        with SQL_ENGINE.connect() as con:
+            res = con.execute(q)
+            
+
+    res = SQL_ENGINE.execute(f'SELECT count(*) FROM "{rss_dirname}"')
+    
+    # общее количество строк в таблице
+    num_str = res.first()[0]
+            
+    logger.debug(f'Сформировали SQL таблицу "{rss_dirname}". Кол-во строк: {num_str}')
+    
+    return {rss_dirname:num_str}
+
+# # тест
+# rez_sql = ''
+# if "DEBUG" in logger.name:
+#     rss_url = 'https://regnum.ru/rss'#
+#     rez_sql = insert_all_feedfiles_sql(rss_url)
+# rez_sql
+
+
+# %% [markdown] tags=[]
+# ## 3. ** Инкрементальная загрузка свежей порции данных через SQL
+
+# %% tags=[]
+def insert_newest_feedfiles_by_sql(rss_url: str):
+    """ взять самый свежий файл с фидом в папке рсс и встить в SQL таблицу, избегая повторений
+        Результат: SQL таблица с уникальными записями из всех файлов в папке источника
+    """
+    # подготавливаем имя папки для чтения скачанных из РСС данных - отдельных файлов
+    rss_dirname = rssname_to_dirname(rss_url) #rss_url.replace(u'https://', "").replace(u"/","|") # rss_dir_prepare(rss_url)
+    abs_rss_dirname = os.path.join(DATA_DIR_NAME, rss_dirname)
+    
+    # надо бы проверить - существует такакая таблица или еще нет
+    
+    # получаем список сохраненных файлов - сортируем в порядке убывания времени - т.е. самый свежий файл будет первым
+    list_dir = [ fn for fn in sorted( os.listdir(abs_rss_dirname), reverse=True) if '.json' in fn]
+    # если файлов не нашлось - страшно ругаемся
+    if len(list_dir) == 0:
+        logger.error("Стоп! Файлы для добавления в sql таблицу {rss_dirname} отсутствуют в папке {abs_rss_dirname}")
+        raise IOError 
+    logger.debug(f'Прочитали директорию {abs_rss_dirname}. Берем в работу самый свежий файл: {list_dir[0]}')
+    
+    for rf in list_dir[0:1]:
+        # получаем датафрейм пандас для файла
+        df = feedfile_to_pandas(rss_url, rf)
+        
+        # если sql таблица с данными для этого источника еще не создана - создаем новую, иначе - дописываем
+        if rss_dirname not in sa.inspect(SQL_ENGINE).get_table_names():
+            # вставляем данные из пандаса прямо в новую создаваемуб ОСНОВНУЮ таблицу для данного источника
+            df.to_sql(rss_dirname, SQL_ENGINE, if_exists='replace', index=False)
+            # делаем первичным ключем - хэш, чтобы записи не повторялись
+            q = f'ALTER TABLE public."{rss_dirname}" ADD CONSTRAINT "{rss_dirname}_pk" PRIMARY KEY (hash);'
+            
+        else:
+            # вставляем данные из пандаса прямо в новую создаваемуб ВРЕМЕННУЮ таблицу
+            tmp_dbname = "tmp."+rss_dirname
+            df.to_sql(tmp_dbname, SQL_ENGINE, if_exists='replace', index=False)
+            q = f'INSERT INTO "{rss_dirname}" SELECT * FROM "{tmp_dbname}" WHERE hash NOT IN (SELECT hash FROM "{rss_dirname}")'
+            
+        # выполняем сформированный SQl запрос
+        with SQL_ENGINE.connect() as con:
+            res = con.execute(q)
+            
+
+    res = SQL_ENGINE.execute(f'SELECT count(*) FROM "{rss_dirname}"')
+    
+    # финальное количство строк в таблице
+    num_str = res.first()[0]
+    
+    logger.debug(f'Записали в SQL таблицу "{rss_dirname}". Кол-во строк: {num_str}')
+    
+    return {rss_dirname:num_str}
+
+# # тест
+# rez_sql = ''
+# if "DEBUG" in logger.name:
+#     rss_url = 'https://regnum.ru/rss'#
+#     rez_sql = insert_newest_feedfiles_by_sql(rss_url)
+# rez_sql
+
+
+# %% [markdown] tags=[] jp-MarkdownHeadingCollapsed=true
+# ## -- Инициализирующая Загрузка данных из всех файлов всех папок источников RSS в SQL через PANDAS
+
+# %% tags=[]
+def load_all_feeddirs_to_sql_by_pandas():
     """ Загрузка всех данных из папок источников в SQL , через объединение их в pandas"""
     # читаем конфиг с адресами источников РСС
     rss_urls = read_config(CONFIG_FILE_NAME)
@@ -452,71 +535,84 @@ def load_all_feeddirs_to_sql():
         join_all_feedfiles_pandas_sql(url)
 
 
-if "DEBUG" in logger.name:
-    # можно сначала загрузить свежую порцию фидов 
-    # get_all_rss_data()
-    # а потом закинуть все в БД
-    load_all_feeddirs_to_sql()
+# if "DEBUG" in logger.name:
+#     # можно сначала загрузить свежую порцию фидов 
+#     # get_all_rss_data()
+#     # а потом закинуть все в БД
+#     load_all_feeddirs_to_sql_by_pandas()
 
 
-# %% [markdown]
-# ## 2. ? Тест: Взять самый свежий файл и следующий за ним файл и объединить, убрав повторения
-
-# %%
-# def join_two_feeds(rss_url:str, rss_file_name1:str, rss_file_name2:str):
-#     """ Сливает два фида, представленных таблицами пандас, в один , удаляя повторения
-#     """
-    
-#     df1 = feedfile_to_pandas(rss_url, rss_file_name1)
-#     df2 = feedfile_to_pandas(rss_url, rss_file_name2)
-#     df_rez = pd.concat([df1, df2] )#,ignore_index=True
-#     df_rez.drop_duplicates(inplace=True)
-    
-#     return df_rez
-
+# %% [markdown] tags=[]
+# ## ** Инициализирующая Загрузка данных из ВСЕХ файлов всех папок источников RSS СРАЗУ в SQL
 
 # %% tags=[]
-# # подготавливаем папки для хранения скачиваемых из РСС данных
-# rss_url = 'https://regnum.ru/rss'# 'https://ria.ru/export/rss2/archive/index.xml' #'https://lenta.ru/rss/' # rss_urls[0]
-# rss_dirname = rssname_to_dirname(rss_url) #rss_url.replace(u'https://', "").replace(u"/","|") # rss_dir_prepare(rss_url)
-# abs_rss_dirname = os.path.join(DATA_DIR_NAME, rss_dirname)
+def load_all_feeddirs_directly_to_sql():
+    """ Инициализирующая Загрузка всех данных из папок источников непосресдвенно в SQL 
+        Если таблица уже была, то она удаляется
+    """
+    
+    logger.info(f'== Начало Инициализирующей загрузки')
+    
+    # читаем конфиг с адресами источников РСС
+    rss_urls = read_config(CONFIG_FILE_NAME)
 
-# # получаем список сохраненных файлов
-# list_dir = [ fn for fn in sorted( os.listdir(abs_rss_dirname), reverse=True) if '.json' in fn]
-# logger.debug(f'Прочитали директорию {abs_rss_dirname}. Файлов: {len(list_dir)}. Список: {list_dir}')
+    str_num = dict()
+    
+    for url in rss_urls:
+        # группируем все в один датафрейм и записываем его в SQL
+        rez = insert_all_feedfiles_sql(url) 
+        str_num.update(rez)
+        
+    logger.info(f'== Инициализирующая загрузка произведена. Кол-ва загруженных строк: {str_num}')
+        
 
-# #самый свежий файл
-# file0 = list_dir[0]
-# df0 = feedfile_to_pandas(rss_url, file0)
-# # открываем следующий файл - это файл чуть старее,чем первый
-# file1 = list_dir[1]
-# df1 = feedfile_to_pandas(rss_url, file1)
 
-# df0.iloc[0:5,:]
+# if "DEBUG" in logger.name:
+#     # можно сначала загрузить свежую порцию фидов 
+#     # get_all_rss_data()
+#     # а потом закинуть все в БД
+#     load_all_feeddirs_directly_to_sql()
 
-# df1.iloc[0:5,:]
 
-# dfx = df0.merge(df1, on=['title', 'link', 'publish_date', 'category', 'description', 'source' ], how='right', indicator= True ).dropna()
-# dfx[dfx._merge == 'right_only' ]
+# %% [markdown] tags=[]
+# ## ** Инкрементальная Загрузка данных для всех источников RSS СРАЗУ в SQL
 
-# df_rez = pd.concat([df0, df1] )#,ignore_index=True
-# df_rez
+# %% tags=[] jupyter={"outputs_hidden": true}
+def load_newest_feeddirs_directly_to_sql():
+    """ Загрузка самых новых данных (самый ноывй файл) из папок источников непосредственно в SQL  """
+    
+    logger.info('=== Запись свежих данных в SQL таблицы ===')
+    
+    # читаем конфиг с адресами источников РСС
+    rss_urls = read_config(CONFIG_FILE_NAME)
 
-# df_rez.drop_duplicates()
+    str_num = dict()
+    
+    for url in rss_urls:
+        # группируем все в один датафрейм и записываем его в SQL
+        rez = insert_newest_feedfiles_by_sql(url)
+        str_num.update(rez)
+        
+    logger.info(f'=== Конец записи. Кол-ва записей в таблицах: {str_num} ===')
+    
 
-# %% [markdown]
-# # Инкрементальная загрузка данных из RSS
+# if "DEBUG" in logger.name:
+#     # можно сначала загрузить свежую порцию фидов 
+#     # get_all_rss_data()
+#     # а потом закинуть все в БД
+#     load_newest_feeddirs_directly_to_sql()
+
+
+# %% [markdown] tags=[]
+# # ** CRON : регулярное получение данных и записывание их в SQL базу
 
 # %%
-""" Вариант1:
-    Скачать порцию данных
-    Преобразовать ее в пандас
-    Получить самую свежую запись из БД
-    Определить в таблице пандас записи более новые, чем самая свежая из БД
-    Дописать полученные записи в БД
-"""
-
-# %%
+def cron():
+    """ реуглярно собираем данные из источников и тут же записываем их в SQL"""
+    get_all_rss_data()
+    
+    load_newest_feeddirs_directly_to_sql()
+    
 
 # %% [markdown]
 # # Группировка тематических рубрик
@@ -524,4 +620,4 @@ if "DEBUG" in logger.name:
 # %% [markdown]
 # ## Тематическое моделирование
 
-# %%
+# %% jupyter={"source_hidden": true} tags=[]
