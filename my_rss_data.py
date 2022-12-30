@@ -108,8 +108,8 @@ dictLogConfig = {
 logging.config.dictConfig(dictLogConfig)
 
 
-# logger = logging.getLogger("INFO."+PROG_NAME)
-logger = logging.getLogger("DEBUG."+PROG_NAME)
+logger = logging.getLogger("INFO."+PROG_NAME)
+# logger = logging.getLogger("DEBUG."+PROG_NAME)
 
 # %% [markdown] jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true
 # ## Глобальные переменные
@@ -616,7 +616,7 @@ def load_newest_feeddirs_directly_to_sql():
 # %% [markdown] tags=[]
 # # ** CRON : регулярное получение данных и записывание их в SQL базу
 
-# %% tags=[] jupyter={"outputs_hidden": true}
+# %% tags=[]
 def cron():
     """ реуглярно собираем данные из источников и тут же записываем их в SQL"""
     get_all_rss_data()
