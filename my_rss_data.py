@@ -119,6 +119,9 @@ logger = logging.getLogger("DEBUG."+PROG_NAME)
 CONFIG_FILE_NAME = os.path.abspath(u'./config/rss_links.csv')
 DATA_DIR_NAME = os.path.abspath(u'./data')
 MAIN_TABLE_NAME = "main"
+CATEGORY_FILE = os.path.abspath(u'./category/category.csv')
+CATEGORY_TABLE = "category_map"
+
 
 
 PGS_LGIN = 'postgres'
@@ -708,6 +711,76 @@ def make_union_main_table(main_table=MAIN_TABLE_NAME):
 # # Группировка тематических рубрик
 
 # %% [markdown]
+# ## загрузка групп категорий из файла в таблицу SQL
+
+# %% tags=[]
+def load_category_map_from_file(cat_file =CATEGORY_FILE, cat_tab=CATEGORY_TABLE):
+    """ формирование таблицы сводных категорий из внешнего файла
+        .. пока такой вариант.
+    """
+    df = pd.read_csv(cat_file, sep=';', header=None).rename(columns={0:'category', 1:'cat_group'})
+    
+    # если пришел пустой список - страшно ругаемся 
+    if len(df) == 0:
+        logger.error(f'Стоп! Список категорий в файле {cat_file} пуст: {len(rss_urls)}')
+        raise IOError
+    
+    logger.debug(f'Прочитан файл сводных категорий. Кол-во записей: {len(df)}')
+    
+    df.to_sql(cat_tab, SQL_ENGINE, if_exists='replace', index=False)
+    
+    res = SQL_ENGINE.execute(f'SELECT count(*) FROM "{cat_tab}"')
+    # общее количество строк в таблице
+    num_str = res.first()[0]
+    
+    
+    logger.debug(f'Сводные категории загружены в SQL таблицу {cat_tab}. Кол-во записей: {num_str}')
+    
+    return  df
+
+# #тест
+# df=''
+# if "DEBUG" in logger.name:
+#     df = load_category_map_from_file()
+# df   
+
+
+# %% [markdown]
+# ## Добавление к главной обобщающей таблице групп категорий
+
+# %% tags=[]
+def add_cat_group_to_main_table():
+    """
+        Добавление к главной обобщающей таблице групп категорий
+    """
+    qdt = f'DROP TABLE IF EXISTS "{MAIN_TABLE_NAME}_cat"; '
+
+    qc = f'CREATE TABLE "{MAIN_TABLE_NAME}_cat" (\
+        title text NULL,\
+        link text NULL,\
+        publish_date timestamptz NULL,\
+        category text NULL,\
+        description text NULL,\
+        "source" text NULL,\
+        hash text NOT NULL,\
+        cat_group text NULL,\
+        CONSTRAINT "main_table_cat_pk" PRIMARY KEY (hash)\
+        );'
+
+    q = f'INSERT INTO "{MAIN_TABLE_NAME}_cat" \
+    SELECT m.*, cm.cat_group FROM "{MAIN_TABLE_NAME}" m \
+    JOIN "{CATEGORY_TABLE}" cm  ON m.category = cm.category ;'
+
+    # print(q)
+
+    res = SQL_ENGINE.execute(qdt)
+    res = SQL_ENGINE.execute(qc)
+    res = SQL_ENGINE.execute(q)
+
+
+# %% [markdown]
 # ## Тематическое моделирование
+
+# %%
 
 # %% tags=[]
