@@ -1,4 +1,4 @@
-2022-12-29 21:07:42,110:INFO.MY_RSS_DATA:INFO=>=== Начало загрузки данных ===<=my_rss_data.py->get_all_rss_data[272]
-2022-12-29 21:07:46,981:INFO.MY_RSS_DATA:INFO=>=== Данные загрузили. Кол-во источников 10 ===<=my_rss_data.py->get_all_rss_data[287]
-2022-12-29 21:07:46,981:INFO.MY_RSS_DATA:INFO=>=== Запись свежих данных в SQL таблицы ===<=my_rss_data.py->load_newest_feeddirs_directly_to_sql[584]
-2022-12-29 21:07:48,657:INFO.MY_RSS_DATA:INFO=>=== Конец записи. Кол-ва записей в таблицах: {'lenta.ru|rss|': 4399, 'www.vedomosti.ru|rss|news': 3600, 'tass.ru|rss|v2.xml': 2169, 'ria.ru|export|rss2|archive|index.xml': 2194, 'www.kommersant.ru|RSS|news.xml': 6564, 'rossaprimavera.ru|rss': 1094, 'regnum.ru|rss': 2101, 'www.cnews.ru|inc|rss|news.xml': 2000, 'hibinform.ru|feed|': 60, 'habr.com|ru|rss|all|all|': 322} ===<=my_rss_data.py->load_newest_feeddirs_directly_to_sql[596]
+2023-01-03 21:08:32,820:INFO.MY_RSS_DATA:INFO=>=== Начало загрузки данных ===<=2773846537.py->get_all_rss_data[5]
+2023-01-03 21:08:40,737:INFO.MY_RSS_DATA:INFO=>=== Данные загрузили. Кол-во источников 10 ===<=2773846537.py->get_all_rss_data[20]
+2023-01-03 21:08:40,737:INFO.MY_RSS_DATA:INFO=>=== Запись свежих данных в SQL таблицы ===<=79031016.py->load_newest_feeddirs_directly_to_sql[4]
+2023-01-03 21:08:42,279:INFO.MY_RSS_DATA:INFO=>=== Конец записи. Кол-ва записей в таблицах: {'lenta.ru|rss|': 11398, 'www.vedomosti.ru|rss|news': 8003, 'tass.ru|rss|v2.xml': 5532, 'ria.ru|export|rss2|archive|index.xml': 5572, 'www.kommersant.ru|RSS|news.xml': 13878, 'rossaprimavera.ru|rss': 2509, 'regnum.ru|rss': 5411, 'www.cnews.ru|inc|rss|news.xml': 3381, 'hibinform.ru|feed|': 80, 'habr.com|ru|rss|all|all|': 917} ===<=79031016.py->load_newest_feeddirs_directly_to_sql[16]

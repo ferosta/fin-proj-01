@@ -35,22 +35,44 @@ import errno
 # %% [markdown] tags=[]
 # # Конфигурационные настройки
 
+# %% [markdown] jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true
+# ## Глобальные переменные
+
+# %% tags=[]
+#импортируем путь и уровень лога - они разные для отладки и продакшына
+from my_rss_data_env import RUN_DIR, LOG_LEVEL
+
+# название программы - для логов
+PROG_NAME = 'MY_RSS_DATA'
+# LOG_LEVEL = 'DEBUG' # 'INFO'
+RUN_DIR = os.path.abspath(RUN_DIR)
+
+# конфигурационные настройки
+CONFIG_FILE_NAME = os.path.join(RUN_DIR, u'config/rss_links.csv') 
+DATA_DIR_NAME = os.path.join(RUN_DIR, u'data')
+MAIN_TABLE_NAME = "main"
+CATEGORY_FILE = os.path.join(RUN_DIR, u'./category/category.csv')
+CATEGORY_TABLE = "category_map"
+
+
+# подключение к Postgres - который развернут в докере на сервере
+PGS_LGIN = 'postgres'
+PGS_PSWD = 'postgres'
+PGS_DB = 'postgres'
+PGS_ADDR =  '172.17.0.1' #'192.168.144.9'
+PGS_PORT = 5440
+
+SQL_ENGINE = create_engine(f'postgresql://{PGS_LGIN}:{PGS_PSWD}@localhost:{PGS_PORT}/{PGS_DB}')
+
 # %% [markdown] jp-MarkdownHeadingCollapsed=true tags=[]
 # ## Логирование
 
 # %% tags=[]
-# логирование
-# PRJ_DIR = "" #'/home/fedorov/mypy/vk_prj/'
-# if PRJ_DIR not in sys.path:
-#     sys.path.insert(0, PRJ_DIR)
 ##########################################
 # логирование
-# лучше бы использовать loguru
+# !!! лучше бы использовать loguru !!!
 import logging
 import logging.config
-
-# название программы - для логов
-PROG_NAME = 'MY_RSS_DATA'
 
 
 dictLogConfig = {
@@ -108,30 +130,8 @@ dictLogConfig = {
 logging.config.dictConfig(dictLogConfig)
 
 
-logger = logging.getLogger("INFO."+PROG_NAME)
+logger = logging.getLogger(f'{LOG_LEVEL}.{PROG_NAME}')
 # logger = logging.getLogger("DEBUG."+PROG_NAME)
-
-# %% [markdown] jp-MarkdownHeadingCollapsed=true tags=[] jp-MarkdownHeadingCollapsed=true
-# ## Глобальные переменные
-
-# %% tags=[]
-# конфигурационные настройки
-CONFIG_FILE_NAME = os.path.abspath(u'./config/rss_links.csv')
-DATA_DIR_NAME = os.path.abspath(u'./data')
-MAIN_TABLE_NAME = "main"
-CATEGORY_FILE = os.path.abspath(u'./category/category.csv')
-CATEGORY_TABLE = "category_map"
-
-
-
-PGS_LGIN = 'postgres'
-PGS_PSWD = 'postgres'
-PGS_DB = 'postgres'
-PGS_ADDR =  '172.17.0.1' #'192.168.144.9'
-PGS_PORT = 5440
-
-SQL_ENGINE = create_engine(f'postgresql://{PGS_LGIN}:{PGS_PSWD}@localhost:{PGS_PORT}/{PGS_DB}')
-
 
 # %% [markdown] jp-MarkdownHeadingCollapsed=true tags=[]
 # # Чтение конфига с адресами источников РСС
@@ -616,16 +616,16 @@ def load_newest_feeddirs_directly_to_sql():
 # %% [markdown] tags=[]
 # # ** CRON : регулярное получение данных и записывание их в SQL базу
 
-# %% tags=[]
+# %% tags=[] jupyter={"outputs_hidden": true}
 def cron():
     """ реуглярно собираем данные из источников и тут же записываем их в SQL"""
     get_all_rss_data()
     
     load_newest_feeddirs_directly_to_sql()
     
-# # тест
-# if "DEBUG" in logger.name:
-#     cron()
+# тест
+if "DEBUG" in logger.name:
+    cron()
 
 
 # %% [markdown]
@@ -705,7 +705,7 @@ def make_union_main_table(main_table=MAIN_TABLE_NAME):
 # qq=''
 # if "DEBUG" in logger.name:
 #      make_union_main_table()
- 
+
 
 # %% [markdown]
 # # Группировка тематических рубрик
@@ -729,6 +729,11 @@ def load_category_map_from_file(cat_file =CATEGORY_FILE, cat_tab=CATEGORY_TABLE)
     
     df.to_sql(cat_tab, SQL_ENGINE, if_exists='replace', index=False)
     
+#     # ключ
+#     q = f'ALTER TABLE public."{cat_tab}" ADD CONSTRAINT "{cat_tab}_pk" PRIMARY KEY (category);'
+#     res = SQL_ENGINE.execute(q)
+    
+    
     res = SQL_ENGINE.execute(f'SELECT count(*) FROM "{cat_tab}"')
     # общее количество строк в таблице
     num_str = res.first()[0]
@@ -738,11 +743,11 @@ def load_category_map_from_file(cat_file =CATEGORY_FILE, cat_tab=CATEGORY_TABLE)
     
     return  df
 
-# #тест
-# df=''
-# if "DEBUG" in logger.name:
-#     df = load_category_map_from_file()
-# df   
+#тест
+df=''
+if "DEBUG" in logger.name:
+    df = load_category_map_from_file()
+df   
 
 
 # %% [markdown]
@@ -769,17 +774,28 @@ def add_cat_group_to_main_table():
 
     q = f'INSERT INTO "{MAIN_TABLE_NAME}_cat" \
     SELECT m.*, cm.cat_group FROM "{MAIN_TABLE_NAME}" m \
-    JOIN "{CATEGORY_TABLE}" cm  ON m.category = cm.category ;'
+    LEFT JOIN "{CATEGORY_TABLE}" cm  ON m.category = cm.category ;'
+    
+    # q = f'INSERT INTO "{MAIN_TABLE_NAME}_cat" \
+    # (SELECT m.*, cm.cat_group FROM "{MAIN_TABLE_NAME}" m \
+    # LEFT JOIN "{CATEGORY_TABLE}" cm  ON m.category = cm.category) \
+    # UNION ALL \
+    # (SELECT m.*, cm.category as "cat_group" FROM "{MAIN_TABLE_NAME}" m, "{CATEGORY_TABLE}" cm  \
+    # WHERE  m.category != cm.category)\
+    # ;'
 
     # print(q)
 
     res = SQL_ENGINE.execute(qdt)
     res = SQL_ENGINE.execute(qc)
     res = SQL_ENGINE.execute(q)
+    
+#тест
+add_cat_group_to_main_table()
 
 
 # %% [markdown]
-# ## Тематическое моделирование
+# ## --Тематическое моделирование
 
 # %%
 
