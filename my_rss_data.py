@@ -44,7 +44,7 @@ from my_rss_data_env import RUN_DIR, LOG_LEVEL
 
 # название программы - для логов
 PROG_NAME = 'MY_RSS_DATA'
-# LOG_LEVEL = 'DEBUG' # 'INFO'
+# LOG_LEVEL = 'INFO' # 'DEBUG' # 
 RUN_DIR = os.path.abspath(RUN_DIR)
 
 # конфигурационные настройки
@@ -616,7 +616,7 @@ def load_newest_feeddirs_directly_to_sql():
 # %% [markdown] tags=[]
 # # ** CRON : регулярное получение данных и записывание их в SQL базу
 
-# %% tags=[] jupyter={"outputs_hidden": true}
+# %% tags=[]
 def cron():
     """ реуглярно собираем данные из источников и тут же записываем их в SQL"""
     get_all_rss_data()
@@ -732,8 +732,12 @@ def load_category_map_from_file(cat_file =CATEGORY_FILE, cat_tab=CATEGORY_TABLE)
 #     # ключ
 #     q = f'ALTER TABLE public."{cat_tab}" ADD CONSTRAINT "{cat_tab}_pk" PRIMARY KEY (category);'
 #     res = SQL_ENGINE.execute(q)
+
+    # добавление суррогатного ключа
+    q = f'ALTER TABLE {cat_tab} ADD COLUMN id SERIAL PRIMARY KEY;'
+    res = SQL_ENGINE.execute(q)
     
-    
+    # считаем общее количество получившихся строк
     res = SQL_ENGINE.execute(f'SELECT count(*) FROM "{cat_tab}"')
     # общее количество строк в таблице
     num_str = res.first()[0]
@@ -758,24 +762,49 @@ def add_cat_group_to_main_table():
     """
         Добавление к главной обобщающей таблице групп категорий
     """
-    qdt = f'DROP TABLE IF EXISTS "{MAIN_TABLE_NAME}_cat"; '
-
-    qc = f'CREATE TABLE "{MAIN_TABLE_NAME}_cat" (\
-        title text NULL,\
-        link text NULL,\
-        publish_date timestamptz NULL,\
-        category text NULL,\
-        description text NULL,\
-        "source" text NULL,\
-        hash text NOT NULL,\
-        cat_group text NULL,\
-        CONSTRAINT "main_table_cat_pk" PRIMARY KEY (hash)\
-        );'
-
-    q = f'INSERT INTO "{MAIN_TABLE_NAME}_cat" \
-    SELECT m.*, cm.cat_group FROM "{MAIN_TABLE_NAME}" m \
-    LEFT JOIN "{CATEGORY_TABLE}" cm  ON m.category = cm.category ;'
+     
     
+    res = SQL_ENGINE.execute(f'\
+            DROP TABLE IF EXISTS "{MAIN_TABLE_NAME}_cat";\
+    ')
+    logger.debug(f'Удаление главной таблицы: {res}')
+
+    # формируем новую главную таблицу для вставки туда категрий
+    res = SQL_ENGINE.execute(f'\
+        CREATE TABLE "{MAIN_TABLE_NAME}_cat" (\
+            title text  NULL,\
+            link text  NULL,\
+            publish_date timestamptz  NULL,\
+            category text NULL,\
+            description text  NULL,\
+            "source" text  NULL,\
+            hash text  NULL,\
+            cat_group text NULL,\
+            cat_id INTEGER NULL,\
+            CONSTRAINT "main_table_cat_pk" PRIMARY KEY (hash)\
+        );\
+    ')
+    logger.debug(f'Создание новой главной таблицы. Кол-во записей: {res.rowcount}')
+
+    # вставляем в основную таблицу категрии новостей
+    res = SQL_ENGINE.execute(f'\
+        INSERT INTO "{MAIN_TABLE_NAME}_cat" \
+        SELECT m.*, cm.cat_group, cm.id as cat_id FROM "{MAIN_TABLE_NAME}" m \
+        LEFT JOIN "{CATEGORY_TABLE}" cm  ON m.category = cm.category;\
+    ')
+    logger.debug(f'Добавеление в главную таблицу категрий. Кол-во записей: {res.rowcount}')
+    
+    
+    # т.к. в текущей версии костыльных ручных групп новостей будут не все группы, то 
+    # пустые группы новостей пронумеруем и поименуем вручную еще раз
+    res = SQL_ENGINE.execute(f"\
+        UPDATE {MAIN_TABLE_NAME}_cat \
+        SET cat_group = 'новые новости' \
+            ,cat_id = 0 \
+        WHERE cat_group IS NULL OR cat_id IS NULL; \
+    ")
+    logger.debug(f'Корректировка неучтенных категорий. Кол-во записей: {res.rowcount}')
+
     # q = f'INSERT INTO "{MAIN_TABLE_NAME}_cat" \
     # (SELECT m.*, cm.cat_group FROM "{MAIN_TABLE_NAME}" m \
     # LEFT JOIN "{CATEGORY_TABLE}" cm  ON m.category = cm.category) \
@@ -785,14 +814,18 @@ def add_cat_group_to_main_table():
     # ;'
 
     # print(q)
-
-    res = SQL_ENGINE.execute(qdt)
-    res = SQL_ENGINE.execute(qc)
-    res = SQL_ENGINE.execute(q)
+    logger.debug(f'Сформирована главная таблица с категориями. Всего записей: {res.rowcount}')
+    return res
     
 #тест
-add_cat_group_to_main_table()
+res = ''
+if "DEBUG" in logger.name:
+    res = add_cat_group_to_main_table()
+# print (res)
 
+
+# %% tags=[]
+res.rowcount
 
 # %% [markdown]
 # ## --Тематическое моделирование
