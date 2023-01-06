@@ -757,7 +757,7 @@ df
 # %% [markdown]
 # ## Добавление к главной обобщающей таблице групп категорий
 
-# %% tags=[]
+# %% tags=[] jupyter={"outputs_hidden": true}
 def add_cat_group_to_main_table():
     """
         Добавление к главной обобщающей таблице групп категорий
@@ -817,15 +817,12 @@ def add_cat_group_to_main_table():
     logger.debug(f'Сформирована главная таблица с категориями. Всего записей: {res.rowcount}')
     return res
     
-#тест
-res = ''
-if "DEBUG" in logger.name:
-    res = add_cat_group_to_main_table()
-# print (res)
+# #тест
+# res = ''
+# if "DEBUG" in logger.name:
+#     res = add_cat_group_to_main_table()
+# # print (res)
 
-
-# %% tags=[]
-res.rowcount
 
 # %% [markdown]
 # ## --Тематическое моделирование
