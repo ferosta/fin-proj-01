@@ -757,7 +757,7 @@ df
 # %% [markdown]
 # ## Добавление к главной обобщающей таблице групп категорий
 
-# %% tags=[] jupyter={"outputs_hidden": true}
+# %% tags=[]
 def add_cat_group_to_main_table():
     """
         Добавление к главной обобщающей таблице групп категорий
@@ -829,4 +829,78 @@ def add_cat_group_to_main_table():
 
 # %%
 
+# %% [markdown]
+# # Витрина
+
+# %% [markdown]
+# ## ПредВитрина №01
+# Суррогатный ключ категории
+# Название категории
+# Общее количество новостей из всех источников по данной категории за все время
+# Количество новостей данной категории для каждого из источников за все время
+
 # %% tags=[]
+def make_vitrine_01():
+    """
+        -- Промежуточный результат: Витрина с данными задачи №01 и №02
+        -- выполнение одним запросом без сохранения промежуточных таблиц
+    """
+    
+    q = """
+        DROP TABLE IF EXISTS vitrine_03;
+        WITH 
+         cat_list AS (SELECT cat_group AS "Категория" FROM main_cat GROUP BY "Категория" ORDER BY "Категория")-- список категорий
+        ,cat_nlist AS(SELECT ROW_NUMBER() OVER() AS "N", "Категория"   FROM cat_list) -- нумерованный список категорий
+        ,all_src AS (SELECT * FROM -- все категории по всем источникам за все время
+                        crosstab('SELECT cat_group AS "Категория", ''Все источники'' AS "Источник", count(*) AS "Всего новостей"
+                                  FROM main_cat GROUP BY cat_group ORDER BY cat_group'
+                        ) AS ct ("Категория_01" text, "Все источники" INT8))
+        ,each_src AS (SELECT * FROM -- все категории по каждому источнику за все время
+                        crosstab('SELECT cat_group AS "Категория", "source" as "Источник", count(*) AS "Всего новостей"
+                                  FROM main_cat GROUP BY "Категория", "Источник" ORDER BY 1, 2'
+                        , 'SELECT DISTINCT "source" FROM main_cat ORDER BY "source"'
+                        ) AS ct ("Категория_02" TEXT
+                                ,"habr.com|ru|rss|all|all|" int8
+                                ,"hibinform.ru|feed|" int8
+                                ,"lenta.ru|rss|" INT8
+                                ,"regnum.ru|rss" INT8
+                                ,"ria.ru|export|rss2|archive|index.xml" INT8
+                                ,"rossaprimavera.ru|rss" INT8
+                                ,"tass.ru|rss|v2.xml" INT8
+                                ,"www.cnews.ru|inc|rss|news.xml" INT8
+                                ,"www.kommersant.ru|RSS|news.xml" INT8
+                                ,"www.vedomosti.ru|rss|news" INT8
+                                ))
+        SELECT cn."N", als.*, eas.* 
+        INTO vitrine_03  -- сохранение в таблицу
+        FROM cat_nlist cn -- нумерованный список категорий
+        LEFT JOIN 
+            (SELECT * FROM all_src) AS als
+        ON cn."Категория" = als."Категория_01"
+        LEFT JOIN 
+            (SELECT * FROM each_src) AS eas
+        ON als."Категория_01" = eas."Категория_02";
+        COMMIT;
+     """
+    
+    
+    res = SQL_ENGINE.execute(q)
+    # conn = SQL_ENGINE.connect()
+    # res = conn.execute(q)
+    # res = conn.execute("""SELECT * FROM vitrine_03""")
+    # conn.commit_prepared()
+    # conn.close()
+    
+    # logger.debug(f'суппер-пуупер запрос: {res.rowcount}')
+
+   
+    logger.debug(f'Сформирована витрина по п.1 и п.2. Всего записей: {res.rowcount}')
+    # logger.debug(f'записей: {res.all()}')
+    
+    return res
+    
+#тест
+res = ''
+if "DEBUG" in logger.name:
+    res = make_vitrine_01()
+# print (res)
