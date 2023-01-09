@@ -650,6 +650,7 @@ def make_union_main_table(main_table=MAIN_TABLE_NAME):
     
     # не удалось использовать SELECT * INTO ... в DBeaver работает, а здесь нет..
     # приходится вручную создавать таблицу
+    # !!! если здесь добавить в конце COMMIT; то будет работать как в DBeaver!!!
     qc = f'CREATE TABLE "{main_table}" (\
     title text NULL,\
     link text NULL,\
@@ -661,7 +662,8 @@ def make_union_main_table(main_table=MAIN_TABLE_NAME):
     CONSTRAINT "main_table_pk" PRIMARY KEY (hash)\
     );'
     
-    q = f'DROP TABLE IF EXISTS "{main_table}"; '
+    q = f'DROP TABLE IF EXISTS "{main_table}";'
+          # DROP CONSTRAINT IF EXISTS "main_table_pk";'
     
     qq = f'INSERT INTO "{main_table}" SELECT * FROM "{rss_tablenames[0]}" '
      
@@ -765,8 +767,8 @@ def add_cat_group_to_main_table():
      
     
     res = SQL_ENGINE.execute(f'\
-            DROP TABLE IF EXISTS "{MAIN_TABLE_NAME}_cat";\
-    ')
+            DROP TABLE IF EXISTS "{MAIN_TABLE_NAME}_cat";')
+            # DROP CONSTRAINT IF EXISTS "main_table_cat_pk";')
     logger.debug(f'Удаление главной таблицы: {res}')
 
     # формируем новую главную таблицу для вставки туда категрий
@@ -833,32 +835,33 @@ def add_cat_group_to_main_table():
 # # Витрина
 
 # %% [markdown]
-# ## ПредВитрина №01
+# ## вар1: ПредВитрина №№01-02
 # Суррогатный ключ категории
 # Название категории
 # Общее количество новостей из всех источников по данной категории за все время
 # Количество новостей данной категории для каждого из источников за все время
 
 # %% tags=[]
-def make_vitrine_01():
+def make_vitrine_01_02(vitrine_name='vitrine_03'):
     """
         -- Промежуточный результат: Витрина с данными задачи №01 и №02
         -- выполнение одним запросом без сохранения промежуточных таблиц
     """
-    
-    q = """
-        DROP TABLE IF EXISTS vitrine_03;
+    # TODO: надо бы еще формирование списков источников сделать динамическим
+    #
+    q = f"""
+        DROP TABLE IF EXISTS {vitrine_name};
         WITH 
-         cat_list AS (SELECT cat_group AS "Категория" FROM main_cat GROUP BY "Категория" ORDER BY "Категория")-- список категорий
+         cat_list AS (SELECT cat_group AS "Категория" FROM {MAIN_TABLE_NAME}_cat GROUP BY "Категория" ORDER BY "Категория")-- список категорий
         ,cat_nlist AS(SELECT ROW_NUMBER() OVER() AS "N", "Категория"   FROM cat_list) -- нумерованный список категорий
         ,all_src AS (SELECT * FROM -- все категории по всем источникам за все время
                         crosstab('SELECT cat_group AS "Категория", ''Все источники'' AS "Источник", count(*) AS "Всего новостей"
-                                  FROM main_cat GROUP BY cat_group ORDER BY cat_group'
+                                  FROM {MAIN_TABLE_NAME}_cat GROUP BY cat_group ORDER BY cat_group'
                         ) AS ct ("Категория_01" text, "Все источники" INT8))
         ,each_src AS (SELECT * FROM -- все категории по каждому источнику за все время
                         crosstab('SELECT cat_group AS "Категория", "source" as "Источник", count(*) AS "Всего новостей"
-                                  FROM main_cat GROUP BY "Категория", "Источник" ORDER BY 1, 2'
-                        , 'SELECT DISTINCT "source" FROM main_cat ORDER BY "source"'
+                                  FROM {MAIN_TABLE_NAME}_cat GROUP BY "Категория", "Источник" ORDER BY 1, 2'
+                        , 'SELECT DISTINCT "source" FROM {MAIN_TABLE_NAME}_cat ORDER BY "source"'
                         ) AS ct ("Категория_02" TEXT
                                 ,"habr.com|ru|rss|all|all|" int8
                                 ,"hibinform.ru|feed|" int8
@@ -872,7 +875,7 @@ def make_vitrine_01():
                                 ,"www.vedomosti.ru|rss|news" INT8
                                 ))
         SELECT cn."N", als.*, eas.* 
-        INTO vitrine_03  -- сохранение в таблицу
+        INTO {vitrine_name}  -- сохранение в таблицу
         FROM cat_nlist cn -- нумерованный список категорий
         LEFT JOIN 
             (SELECT * FROM all_src) AS als
@@ -894,13 +897,123 @@ def make_vitrine_01():
     # logger.debug(f'суппер-пуупер запрос: {res.rowcount}')
 
    
-    logger.debug(f'Сформирована витрина по п.1 и п.2. Всего записей: {res.rowcount}')
+    logger.debug(f'Сформирована витрина ({vitrine_name}) по п.1 и п.2. Всего записей: {res.rowcount}')
     # logger.debug(f'записей: {res.all()}')
     
     return res
     
-#тест
-res = ''
-if "DEBUG" in logger.name:
-    res = make_vitrine_01()
-# print (res)
+# #тест
+# res = ''
+# if "DEBUG" in logger.name:
+#     res = make_vitrine_01_02()
+# # print (res)
+
+# %%
+
+# %% [markdown]
+# ## вар2: ПредВитрина №№01-02
+# сначала собираем все нужные данные в вертикальную таблицу, потом делаем сводную таблицу - горизонтальную широкую витрину
+
+# %% tags=[]
+def make_vitrine_01_02_plus(vitrine_name='vitrine_03'):
+    """
+        -- Промежуточный результат: Витрина с данными задачи №01 и №02
+        -- выполнение одним запросом без сохранения промежуточных таблиц
+    """
+    # TODO: надо бы еще формирование списков источников сделать динамическим
+    #
+    q = f"""
+        DROP TABLE IF EXISTS data_00_01;
+        WITH 
+         cat_list AS (SELECT cat_group AS "Категория" FROM {MAIN_TABLE_NAME}_cat GROUP BY "Категория" ORDER BY "Категория")-- список категорий
+        ,cat_nlist AS(SELECT ROW_NUMBER() OVER() AS "N", "Категория"   FROM cat_list) -- нумерованный список категорий
+        ,all_src AS  (SELECT cat_group AS "Категория", '0Все источники' AS "Источник", count(*) AS "Всего новостей"
+                      FROM {MAIN_TABLE_NAME}_cat GROUP BY cat_group ORDER BY cat_group)
+        ,each_src AS (SELECT cat_group AS "Категория", "source" as "Источник", count(*) AS "Всего новостей"
+                      FROM {MAIN_TABLE_NAME}_cat GROUP BY "Категория", "Источник" ORDER BY "Категория", "Источник")
+        SELECT * 
+        INTO data_00_01
+        FROM all_src
+        UNION
+        SELECT * FROM each_src
+        ORDER BY "Категория","Источник";
+        -------------------------------------------------------------------------
+        -- из сохранненой таблицы с объединенными данными делаем сводную таблицу
+        DROP TABLE IF EXISTS {vitrine_name};
+        SELECT * 
+        INTO {vitrine_name}
+        FROM 
+        crosstab($$SELECT * FROM data_00_01 $$
+                ,$$SELECT DISTINCT "Источник" FROM data_00_01 ORDER BY "Источник" $$
+        ) AS ct ("Категория_02" TEXT
+                ,"Все источники" INT8
+                ,"habr.com|ru|rss|all|all|" INT8
+                ,"hibinform.ru|feed|" INT8
+                ,"lenta.ru|rss|" INT8
+                ,"regnum.ru|rss" INT8
+                ,"ria.ru|export|rss2|archive|index.xml" INT8
+                ,"rossaprimavera.ru|rss" INT8
+                ,"tass.ru|rss|v2.xml" INT8
+                ,"www.cnews.ru|inc|rss|news.xml" INT8
+                ,"www.kommersant.ru|RSS|news.xml" INT8
+                ,"www.vedomosti.ru|rss|news" INT8
+                );
+        COMMIT;
+     """
+    
+    
+    res = SQL_ENGINE.execute(q)
+    # conn = SQL_ENGINE.connect()
+    # res = conn.execute(q)
+    # res = conn.execute("""SELECT * FROM vitrine_03""")
+    # conn.commit_prepared()
+    # conn.close()
+    
+    # logger.debug(f'суппер-пуупер запрос: {res.rowcount}')
+
+   
+    logger.debug(f'Сформирована витрина ({vitrine_name}) по п.1 и п.2. Всего записей: {res.rowcount}')
+    # logger.debug(f'записей: {res.all()}')
+    
+    return res
+    
+# #тест
+# res = ''
+# if "DEBUG" in logger.name:
+#     res = make_vitrine_01_02()
+# # print (res)
+
+# %% [markdown]
+# # ** **CRON**: Формирование главной витрины
+
+# %% tags=[]
+def cron_vitrine():
+    """ последовательность действий для формирования финальной витрины
+        
+    """
+    # формирование объединеной таблицы с данными по всем источникам
+    make_union_main_table()
+    logger.info('Объединенная таблица с данными сформирована.')
+    
+    # (костыли) загрузка в таблицу сформированного вручную файла с группами категрий
+    load_category_map_from_file()
+    logger.info('Группы категорий загружены.')
+    
+    
+    # добавление групп категорий к главной таблице с объединенными данными по всем источникам
+    add_cat_group_to_main_table()
+    logger.info('Данным присвоены группы категорий.')
+    
+    # формирование витрины для первых двух заданий: 
+    # 01 : КАЖДАЯ категория, ВСЕ источники, ВСЕ дни
+    # 02 : КАЖДАЯ категория, КАЖДЫЙ источник, ВСЕ дни 
+    make_vitrine_01_02_plus()
+    logger.info('Витрина сформирована.')
+    
+    
+# #тест
+# res = ''
+# if "DEBUG" in logger.name:
+#     cron_vitrine()
+# # print (res)
+    

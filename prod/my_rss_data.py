@@ -44,7 +44,7 @@ from my_rss_data_env import RUN_DIR, LOG_LEVEL
 
 # название программы - для логов
 PROG_NAME = 'MY_RSS_DATA'
-# LOG_LEVEL = 'DEBUG' # 'INFO'
+# LOG_LEVEL = 'INFO' # 'DEBUG' # 
 RUN_DIR = os.path.abspath(RUN_DIR)
 
 # конфигурационные настройки
@@ -623,9 +623,9 @@ def cron():
     
     load_newest_feeddirs_directly_to_sql()
     
-# # тест
-# if "DEBUG" not in logger.name:
-#     cron()
+# тест
+if "DEBUG" in logger.name:
+    cron()
 
 
 # %% [markdown]
@@ -650,6 +650,7 @@ def make_union_main_table(main_table=MAIN_TABLE_NAME):
     
     # не удалось использовать SELECT * INTO ... в DBeaver работает, а здесь нет..
     # приходится вручную создавать таблицу
+    # !!! если здесь добавить в конце COMMIT; то будет работать как в DBeaver!!!
     qc = f'CREATE TABLE "{main_table}" (\
     title text NULL,\
     link text NULL,\
@@ -661,7 +662,8 @@ def make_union_main_table(main_table=MAIN_TABLE_NAME):
     CONSTRAINT "main_table_pk" PRIMARY KEY (hash)\
     );'
     
-    q = f'DROP TABLE IF EXISTS "{main_table}"; '
+    q = f'DROP TABLE IF EXISTS "{main_table}";'
+          # DROP CONSTRAINT IF EXISTS "main_table_pk";'
     
     qq = f'INSERT INTO "{main_table}" SELECT * FROM "{rss_tablenames[0]}" '
      
@@ -729,6 +731,15 @@ def load_category_map_from_file(cat_file =CATEGORY_FILE, cat_tab=CATEGORY_TABLE)
     
     df.to_sql(cat_tab, SQL_ENGINE, if_exists='replace', index=False)
     
+#     # ключ
+#     q = f'ALTER TABLE public."{cat_tab}" ADD CONSTRAINT "{cat_tab}_pk" PRIMARY KEY (category);'
+#     res = SQL_ENGINE.execute(q)
+
+    # добавление суррогатного ключа
+    q = f'ALTER TABLE {cat_tab} ADD COLUMN id SERIAL PRIMARY KEY;'
+    res = SQL_ENGINE.execute(q)
+    
+    # считаем общее количество получившихся строк
     res = SQL_ENGINE.execute(f'SELECT count(*) FROM "{cat_tab}"')
     # общее количество строк в таблице
     num_str = res.first()[0]
@@ -738,11 +749,11 @@ def load_category_map_from_file(cat_file =CATEGORY_FILE, cat_tab=CATEGORY_TABLE)
     
     return  df
 
-# #тест
-# df=''
-# if "DEBUG" in logger.name:
-#     df = load_category_map_from_file()
-# df   
+#тест
+df=''
+if "DEBUG" in logger.name:
+    df = load_category_map_from_file()
+df   
 
 
 # %% [markdown]
@@ -753,34 +764,256 @@ def add_cat_group_to_main_table():
     """
         Добавление к главной обобщающей таблице групп категорий
     """
-    qdt = f'DROP TABLE IF EXISTS "{MAIN_TABLE_NAME}_cat"; '
+     
+    
+    res = SQL_ENGINE.execute(f'\
+            DROP TABLE IF EXISTS "{MAIN_TABLE_NAME}_cat";')
+            # DROP CONSTRAINT IF EXISTS "main_table_cat_pk";')
+    logger.debug(f'Удаление главной таблицы: {res}')
 
-    qc = f'CREATE TABLE "{MAIN_TABLE_NAME}_cat" (\
-        title text NULL,\
-        link text NULL,\
-        publish_date timestamptz NULL,\
-        category text NULL,\
-        description text NULL,\
-        "source" text NULL,\
-        hash text NOT NULL,\
-        cat_group text NULL,\
-        CONSTRAINT "main_table_cat_pk" PRIMARY KEY (hash)\
-        );'
+    # формируем новую главную таблицу для вставки туда категрий
+    res = SQL_ENGINE.execute(f'\
+        CREATE TABLE "{MAIN_TABLE_NAME}_cat" (\
+            title text  NULL,\
+            link text  NULL,\
+            publish_date timestamptz  NULL,\
+            category text NULL,\
+            description text  NULL,\
+            "source" text  NULL,\
+            hash text  NULL,\
+            cat_group text NULL,\
+            cat_id INTEGER NULL,\
+            CONSTRAINT "main_table_cat_pk" PRIMARY KEY (hash)\
+        );\
+    ')
+    logger.debug(f'Создание новой главной таблицы. Кол-во записей: {res.rowcount}')
 
-    q = f'INSERT INTO "{MAIN_TABLE_NAME}_cat" \
-    SELECT m.*, cm.cat_group FROM "{MAIN_TABLE_NAME}" m \
-    JOIN "{CATEGORY_TABLE}" cm  ON m.category = cm.category ;'
+    # вставляем в основную таблицу категрии новостей
+    res = SQL_ENGINE.execute(f'\
+        INSERT INTO "{MAIN_TABLE_NAME}_cat" \
+        SELECT m.*, cm.cat_group, cm.id as cat_id FROM "{MAIN_TABLE_NAME}" m \
+        LEFT JOIN "{CATEGORY_TABLE}" cm  ON m.category = cm.category;\
+    ')
+    logger.debug(f'Добавеление в главную таблицу категрий. Кол-во записей: {res.rowcount}')
+    
+    
+    # т.к. в текущей версии костыльных ручных групп новостей будут не все группы, то 
+    # пустые группы новостей пронумеруем и поименуем вручную еще раз
+    res = SQL_ENGINE.execute(f"\
+        UPDATE {MAIN_TABLE_NAME}_cat \
+        SET cat_group = 'новые новости' \
+            ,cat_id = 0 \
+        WHERE cat_group IS NULL OR cat_id IS NULL; \
+    ")
+    logger.debug(f'Корректировка неучтенных категорий. Кол-во записей: {res.rowcount}')
+
+    # q = f'INSERT INTO "{MAIN_TABLE_NAME}_cat" \
+    # (SELECT m.*, cm.cat_group FROM "{MAIN_TABLE_NAME}" m \
+    # LEFT JOIN "{CATEGORY_TABLE}" cm  ON m.category = cm.category) \
+    # UNION ALL \
+    # (SELECT m.*, cm.category as "cat_group" FROM "{MAIN_TABLE_NAME}" m, "{CATEGORY_TABLE}" cm  \
+    # WHERE  m.category != cm.category)\
+    # ;'
 
     # print(q)
-
-    res = SQL_ENGINE.execute(qdt)
-    res = SQL_ENGINE.execute(qc)
-    res = SQL_ENGINE.execute(q)
+    logger.debug(f'Сформирована главная таблица с категориями. Всего записей: {res.rowcount}')
+    return res
+    
+# #тест
+# res = ''
+# if "DEBUG" in logger.name:
+#     res = add_cat_group_to_main_table()
+# # print (res)
 
 
 # %% [markdown]
-# ## Тематическое моделирование
+# ## --Тематическое моделирование
 
 # %%
 
+# %% [markdown]
+# # Витрина
+
+# %% [markdown]
+# ## вар1: ПредВитрина №№01-02
+# Суррогатный ключ категории
+# Название категории
+# Общее количество новостей из всех источников по данной категории за все время
+# Количество новостей данной категории для каждого из источников за все время
+
 # %% tags=[]
+def make_vitrine_01_02(vitrine_name='vitrine_03'):
+    """
+        -- Промежуточный результат: Витрина с данными задачи №01 и №02
+        -- выполнение одним запросом без сохранения промежуточных таблиц
+    """
+    # TODO: надо бы еще формирование списков источников сделать динамическим
+    #
+    q = f"""
+        DROP TABLE IF EXISTS {vitrine_name};
+        WITH 
+         cat_list AS (SELECT cat_group AS "Категория" FROM {MAIN_TABLE_NAME}_cat GROUP BY "Категория" ORDER BY "Категория")-- список категорий
+        ,cat_nlist AS(SELECT ROW_NUMBER() OVER() AS "N", "Категория"   FROM cat_list) -- нумерованный список категорий
+        ,all_src AS (SELECT * FROM -- все категории по всем источникам за все время
+                        crosstab('SELECT cat_group AS "Категория", ''Все источники'' AS "Источник", count(*) AS "Всего новостей"
+                                  FROM {MAIN_TABLE_NAME}_cat GROUP BY cat_group ORDER BY cat_group'
+                        ) AS ct ("Категория_01" text, "Все источники" INT8))
+        ,each_src AS (SELECT * FROM -- все категории по каждому источнику за все время
+                        crosstab('SELECT cat_group AS "Категория", "source" as "Источник", count(*) AS "Всего новостей"
+                                  FROM {MAIN_TABLE_NAME}_cat GROUP BY "Категория", "Источник" ORDER BY 1, 2'
+                        , 'SELECT DISTINCT "source" FROM {MAIN_TABLE_NAME}_cat ORDER BY "source"'
+                        ) AS ct ("Категория_02" TEXT
+                                ,"habr.com|ru|rss|all|all|" int8
+                                ,"hibinform.ru|feed|" int8
+                                ,"lenta.ru|rss|" INT8
+                                ,"regnum.ru|rss" INT8
+                                ,"ria.ru|export|rss2|archive|index.xml" INT8
+                                ,"rossaprimavera.ru|rss" INT8
+                                ,"tass.ru|rss|v2.xml" INT8
+                                ,"www.cnews.ru|inc|rss|news.xml" INT8
+                                ,"www.kommersant.ru|RSS|news.xml" INT8
+                                ,"www.vedomosti.ru|rss|news" INT8
+                                ))
+        SELECT cn."N", als.*, eas.* 
+        INTO {vitrine_name}  -- сохранение в таблицу
+        FROM cat_nlist cn -- нумерованный список категорий
+        LEFT JOIN 
+            (SELECT * FROM all_src) AS als
+        ON cn."Категория" = als."Категория_01"
+        LEFT JOIN 
+            (SELECT * FROM each_src) AS eas
+        ON als."Категория_01" = eas."Категория_02";
+        COMMIT;
+     """
+    
+    
+    res = SQL_ENGINE.execute(q)
+    # conn = SQL_ENGINE.connect()
+    # res = conn.execute(q)
+    # res = conn.execute("""SELECT * FROM vitrine_03""")
+    # conn.commit_prepared()
+    # conn.close()
+    
+    # logger.debug(f'суппер-пуупер запрос: {res.rowcount}')
+
+   
+    logger.debug(f'Сформирована витрина ({vitrine_name}) по п.1 и п.2. Всего записей: {res.rowcount}')
+    # logger.debug(f'записей: {res.all()}')
+    
+    return res
+    
+# #тест
+# res = ''
+# if "DEBUG" in logger.name:
+#     res = make_vitrine_01_02()
+# # print (res)
+
+# %%
+
+# %% [markdown]
+# ## вар2: ПредВитрина №№01-02
+# сначала собираем все нужные данные в вертикальную таблицу, потом делаем сводную таблицу - горизонтальную широкую витрину
+
+# %% tags=[]
+def make_vitrine_01_02_plus(vitrine_name='vitrine_03'):
+    """
+        -- Промежуточный результат: Витрина с данными задачи №01 и №02
+        -- выполнение одним запросом без сохранения промежуточных таблиц
+    """
+    # TODO: надо бы еще формирование списков источников сделать динамическим
+    #
+    q = f"""
+        DROP TABLE IF EXISTS data_00_01;
+        WITH 
+         cat_list AS (SELECT cat_group AS "Категория" FROM {MAIN_TABLE_NAME}_cat GROUP BY "Категория" ORDER BY "Категория")-- список категорий
+        ,cat_nlist AS(SELECT ROW_NUMBER() OVER() AS "N", "Категория"   FROM cat_list) -- нумерованный список категорий
+        ,all_src AS  (SELECT cat_group AS "Категория", '0Все источники' AS "Источник", count(*) AS "Всего новостей"
+                      FROM {MAIN_TABLE_NAME}_cat GROUP BY cat_group ORDER BY cat_group)
+        ,each_src AS (SELECT cat_group AS "Категория", "source" as "Источник", count(*) AS "Всего новостей"
+                      FROM {MAIN_TABLE_NAME}_cat GROUP BY "Категория", "Источник" ORDER BY "Категория", "Источник")
+        SELECT * 
+        INTO data_00_01
+        FROM all_src
+        UNION
+        SELECT * FROM each_src
+        ORDER BY "Категория","Источник";
+        -------------------------------------------------------------------------
+        -- из сохранненой таблицы с объединенными данными делаем сводную таблицу
+        DROP TABLE IF EXISTS {vitrine_name};
+        SELECT * 
+        INTO {vitrine_name}
+        FROM 
+        crosstab($$SELECT * FROM data_00_01 $$
+                ,$$SELECT DISTINCT "Источник" FROM data_00_01 ORDER BY "Источник" $$
+        ) AS ct ("Категория_02" TEXT
+                ,"Все источники" INT8
+                ,"habr.com|ru|rss|all|all|" INT8
+                ,"hibinform.ru|feed|" INT8
+                ,"lenta.ru|rss|" INT8
+                ,"regnum.ru|rss" INT8
+                ,"ria.ru|export|rss2|archive|index.xml" INT8
+                ,"rossaprimavera.ru|rss" INT8
+                ,"tass.ru|rss|v2.xml" INT8
+                ,"www.cnews.ru|inc|rss|news.xml" INT8
+                ,"www.kommersant.ru|RSS|news.xml" INT8
+                ,"www.vedomosti.ru|rss|news" INT8
+                );
+        COMMIT;
+     """
+    
+    
+    res = SQL_ENGINE.execute(q)
+    # conn = SQL_ENGINE.connect()
+    # res = conn.execute(q)
+    # res = conn.execute("""SELECT * FROM vitrine_03""")
+    # conn.commit_prepared()
+    # conn.close()
+    
+    # logger.debug(f'суппер-пуупер запрос: {res.rowcount}')
+
+   
+    logger.debug(f'Сформирована витрина ({vitrine_name}) по п.1 и п.2. Всего записей: {res.rowcount}')
+    # logger.debug(f'записей: {res.all()}')
+    
+    return res
+    
+# #тест
+# res = ''
+# if "DEBUG" in logger.name:
+#     res = make_vitrine_01_02()
+# # print (res)
+
+# %% [markdown]
+# # ** **CRON**: Формирование главной витрины
+
+# %% tags=[]
+def cron_vitrine():
+    """ последовательность действий для формирования финальной витрины
+        
+    """
+    # формирование объединеной таблицы с данными по всем источникам
+    make_union_main_table()
+    logger.info('Объединенная таблица с данными сформирована.')
+    
+    # (костыли) загрузка в таблицу сформированного вручную файла с группами категрий
+    load_category_map_from_file()
+    logger.info('Группы категорий загружены.')
+    
+    
+    # добавление групп категорий к главной таблице с объединенными данными по всем источникам
+    add_cat_group_to_main_table()
+    logger.info('Данным присвоены группы категорий.')
+    
+    # формирование витрины для первых двух заданий: 
+    # 01 : КАЖДАЯ категория, ВСЕ источники, ВСЕ дни
+    # 02 : КАЖДАЯ категория, КАЖДЫЙ источник, ВСЕ дни 
+    make_vitrine_01_02_plus()
+    logger.info('Витрина сформирована.')
+    
+    
+# #тест
+# res = ''
+# if "DEBUG" in logger.name:
+#     cron_vitrine()
+# # print (res)
+
