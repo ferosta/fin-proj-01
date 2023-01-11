@@ -980,8 +980,88 @@ def make_vitrine_01_02_plus(vitrine_name='vitrine_03'):
 # #тест
 # res = ''
 # if "DEBUG" in logger.name:
-#     res = make_vitrine_01_02()
+#     res = make_vitrine_01_02_plus()
 # # print (res)
+
+# %% tags=[]
+def make_vitrine_01_03_plus(vitrine_name='vitrine_03_03'):
+    """
+        -- Промежуточный результат: Витрина с данными задачи №01 и №02 03
+        -- выполнение одним запросом без сохранения промежуточных таблиц
+    """
+    # TODO: надо бы еще формирование списков источников сделать динамическим
+    #
+    q = f"""
+        -- Задание №3: Общее количество новостей из всех источников по данной категории за последние сутки
+        -- Промежуточный результат: исходные данные с результатами №01 и №02 и №03 для сводной таблицы - витрины 
+        -- цифры перед названием "все источники" нужны для правильного порядка вывода при формировании сводной таблицы
+        DROP TABLE IF EXISTS data_00_03;
+        WITH 
+         cat_list AS (SELECT DISTINCT cat_group AS "Категория" FROM {MAIN_TABLE_NAME}_cat ORDER BY "Категория")-- список категорий
+        ,cat_nlist AS(SELECT ROW_NUMBER() OVER() AS "N", "Категория"   FROM cat_list) -- нумерованный список категорий
+        ,all_src AS  (SELECT cat_group AS "Категория", '0Все источники' AS "Источник", count(*) AS "Всего новостей"
+                      FROM {MAIN_TABLE_NAME}_cat GROUP BY cat_group ORDER BY cat_group)
+        ,each_src AS (SELECT cat_group AS "Категория", "source" as "Источник", count(*) AS "Всего новостей"
+                      FROM {MAIN_TABLE_NAME}_cat GROUP BY "Категория", "Источник" ORDER BY "Категория", "Источник")
+        ,day_all_src AS (SELECT cat_group AS "Категория", '1День - Все источники' AS "Источник" , count(*) AS "Всего новостей"
+                      FROM {MAIN_TABLE_NAME}_cat WHERE  publish_date > NOW() - INTERVAL '24 hours' GROUP BY cat_group)
+            SELECT * 
+            INTO data_00_03
+            FROM all_src
+        UNION
+            SELECT * FROM each_src
+        UNION 
+            SELECT cat_list."Категория", '1День - Все источники' AS "Источник" , "Всего новостей" 
+            FROM day_all_src -- выборка новостей за день
+            RIGHT JOIN (SELECT * FROM cat_list) AS cat_list -- полный список категорий
+            ON day_all_src."Категория" = cat_list."Категория"
+        ORDER BY "Категория","Источник";
+        -------------------------------------------------------------------------
+        -- из сохранненой таблицы с объединенными данными делаем сводную таблицу
+        DROP TABLE IF EXISTS {vitrine_name};
+        SELECT * 
+        INTO {vitrine_name}
+        FROM 
+        crosstab($$SELECT * FROM data_00_03 $$
+                ,$$SELECT DISTINCT "Источник" FROM data_00_03 ORDER BY "Источник" $$
+        ) AS ct ("Категория_02" TEXT
+                ,"Всё время - Все источники" INT8
+                ,"День - Все источники" INT8
+                ,"habr.com|ru|rss|all|all|" INT8
+                ,"hibinform.ru|feed|" INT8
+                ,"lenta.ru|rss|" INT8
+                ,"regnum.ru|rss" INT8
+                ,"ria.ru|export|rss2|archive|index.xml" INT8
+                ,"rossaprimavera.ru|rss" INT8
+                ,"tass.ru|rss|v2.xml" INT8
+                ,"www.cnews.ru|inc|rss|news.xml" INT8
+                ,"www.kommersant.ru|RSS|news.xml" INT8
+                ,"www.vedomosti.ru|rss|news" INT8
+                );
+        COMMIT;
+     """
+    
+    
+    res = SQL_ENGINE.execute(q)
+    # conn = SQL_ENGINE.connect()
+    # res = conn.execute(q)
+    # res = conn.execute("""SELECT * FROM vitrine_03""")
+    # conn.commit_prepared()
+    # conn.close()
+    
+    # logger.debug(f'суппер-пуупер запрос: {res.rowcount}')
+
+   
+    logger.debug(f'Сформирована витрина ({vitrine_name}) по п.1 и п.2. Всего записей: {res.rowcount}')
+    # logger.debug(f'записей: {res.all()}')
+    
+    return res
+    
+#тест
+res = ''
+if "DEBUG" in logger.name:
+    res = make_vitrine_01_03_plus()
+# print (res)
 
 # %% [markdown]
 # # ** **CRON**: Формирование главной витрины
@@ -1007,8 +1087,8 @@ def cron_vitrine():
     # формирование витрины для первых двух заданий: 
     # 01 : КАЖДАЯ категория, ВСЕ источники, ВСЕ дни
     # 02 : КАЖДАЯ категория, КАЖДЫЙ источник, ВСЕ дни 
-    make_vitrine_01_02_plus()
-    logger.info('Витрина сформирована.')
+    make_vitrine_01_03_plus()
+    logger.info('Витрина сформирована: За все время по всем источникам, За все время по каждому источнику, За сутки по всем источникам')
     
     
 # #тест
