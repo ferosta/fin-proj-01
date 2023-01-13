@@ -2121,3 +2121,30 @@
 2023-01-13 19:10:53,942:DEBUG.MY_RSS_DATA:DEBUG=>Витрина сохранена в файл /home/fedorov/mypy/dataeng/fin-prj-01/vitrines/1673626252-vitrine.csv<=154104524.py->make_vitrine_01_05[123]
 2023-01-13 19:12:23,055:DEBUG.MY_RSS_DATA:DEBUG=>Сформирована витрина (vitrine_05) по п.1 и п.2. Всего записей: -1<=1111734146.py->make_vitrine_01_05[113]
 2023-01-13 19:12:23,136:DEBUG.MY_RSS_DATA:DEBUG=>Витрина сохранена в файл /home/fedorov/mypy/dataeng/fin-prj-01/vitrines/1673626343-vitrine.csv<=1111734146.py->make_vitrine_01_05[123]
+2023-01-13 21:02:20,978:DEBUG.MY_RSS_DATA:DEBUG=>Сформирована витрина (vitrine_05) по п.1 и п.2. Всего записей: -1<=1111734146.py->make_vitrine_01_05[113]
+2023-01-13 21:02:21,031:DEBUG.MY_RSS_DATA:DEBUG=>Витрина сохранена в файл /home/fedorov/mypy/dataeng/fin-prj-01/vitrines/1673632940-vitrine.csv<=1111734146.py->make_vitrine_01_05[123]
+2023-01-13 21:03:07,609:DEBUG.MY_RSS_DATA:DEBUG=>Сформирована витрина (vitrine_06) по п.1 и п.2. Всего записей: -1<=3547482263.py->make_vitrine_01_06[138]
+2023-01-13 21:03:07,618:DEBUG.MY_RSS_DATA:DEBUG=>Витрина сохранена в файл /home/fedorov/mypy/dataeng/fin-prj-01/vitrines/1673632987-vitrine.csv<=3547482263.py->make_vitrine_01_06[148]
+2023-01-13 21:03:52,600:DEBUG.MY_RSS_DATA:DEBUG=>Сформирована витрина (vitrine_06) по п.1 и п.2. Всего записей: -1<=1693787556.py->make_vitrine_01_06[138]
+2023-01-13 21:03:52,609:DEBUG.MY_RSS_DATA:DEBUG=>Витрина сохранена в файл /home/fedorov/mypy/dataeng/fin-prj-01/vitrines/1673633032-vitrine.csv<=1693787556.py->make_vitrine_01_06[148]
+2023-01-13 21:05:58,566:DEBUG.MY_RSS_DATA:DEBUG=>Ссылки на источники прочитаны из /home/fedorov/mypy/dataeng/fin-prj-01/config/rss_links.csv<=1700406913.py->read_config[8]
+2023-01-13 21:06:05,080:DEBUG.MY_RSS_DATA:DEBUG=>Создали объединенную таблицу main. Количетво записей: 120160<=2884603048.py->make_union_main_table[52]
+2023-01-13 21:06:05,081:DEBUG.MY_RSS_DATA:INFO=>Объединенная таблица с данными сформирована.<=1380753545.py->cron_vitrine[7]
+2023-01-13 21:06:05,100:DEBUG.MY_RSS_DATA:DEBUG=>Прочитан файл сводных категорий. Кол-во записей: 216<=2000337152.py->load_category_map_from_file[12]
+2023-01-13 21:06:05,452:DEBUG.MY_RSS_DATA:DEBUG=>Сводные категории загружены в SQL таблицу category_map. Кол-во записей: 216<=2000337152.py->load_category_map_from_file[30]
+2023-01-13 21:06:05,454:DEBUG.MY_RSS_DATA:INFO=>Группы категорий загружены.<=1380753545.py->cron_vitrine[11]
+2023-01-13 21:06:05,482:DEBUG.MY_RSS_DATA:DEBUG=>Удаление главной таблицы: <sqlalchemy.engine.cursor.LegacyCursorResult object at 0x7f574981a590><=3885179813.py->add_cat_group_to_main_table[10]
+2023-01-13 21:06:05,551:DEBUG.MY_RSS_DATA:DEBUG=>Создание новой главной таблицы. Кол-во записей: -1<=3885179813.py->add_cat_group_to_main_table[27]
+2023-01-13 21:06:08,304:DEBUG.MY_RSS_DATA:DEBUG=>Добавеление в главную таблицу категрий. Кол-во записей: 120160<=3885179813.py->add_cat_group_to_main_table[35]
+2023-01-13 21:06:09,396:DEBUG.MY_RSS_DATA:DEBUG=>Корректировка неучтенных категорий. Кол-во записей: 7863<=3885179813.py->add_cat_group_to_main_table[46]
+2023-01-13 21:06:09,399:DEBUG.MY_RSS_DATA:DEBUG=>Сформирована главная таблица с категориями. Всего записей: 7863<=3885179813.py->add_cat_group_to_main_table[57]
+2023-01-13 21:06:09,400:DEBUG.MY_RSS_DATA:INFO=>Данным присвоены группы категорий.<=1380753545.py->cron_vitrine[16]
+2023-01-13 21:06:11,589:DEBUG.MY_RSS_DATA:DEBUG=>Сформирована витрина (vitrine_06) по п.1 и п.2. Всего записей: -1<=1693787556.py->make_vitrine_01_06[138]
+2023-01-13 21:06:11,598:DEBUG.MY_RSS_DATA:DEBUG=>Витрина сохранена в файл /home/fedorov/mypy/dataeng/fin-prj-01/vitrines/1673633171-vitrine.csv<=1693787556.py->make_vitrine_01_06[148]
+2023-01-13 21:06:11,599:DEBUG.MY_RSS_DATA:INFO=>Витрина сформирована:
+    За все время по всем источникам,
+    За сутки по всем источникам,
+    За сутки по каждому источнику,
+    За все время по каждому источнику,
+    Среднее за сутки за все время по всем источникам,
+    День максимального кол-ва публикаций по категории.<=1380753545.py->cron_vitrine[22]

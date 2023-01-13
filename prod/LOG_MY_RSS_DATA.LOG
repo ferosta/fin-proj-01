@@ -283,3 +283,21 @@
 2023-01-13 16:15:19,419:INFO.MY_RSS_DATA:INFO=>=== Данные загрузили. Кол-во источников 10 ===<=my_rss_data.py->get_all_rss_data[293]
 2023-01-13 16:15:19,419:INFO.MY_RSS_DATA:INFO=>=== Запись свежих данных в SQL таблицы ===<=my_rss_data.py->load_newest_feeddirs_directly_to_sql[594]
 2023-01-13 16:15:23,883:INFO.MY_RSS_DATA:INFO=>=== Конец записи. Кол-ва записей в таблицах: {'lenta.ru|rss|': 23397, 'www.vedomosti.ru|rss|news': 16803, 'tass.ru|rss|v2.xml': 11444, 'ria.ru|export|rss2|archive|index.xml': 11551, 'www.kommersant.ru|RSS|news.xml': 29789, 'rossaprimavera.ru|rss': 4972, 'regnum.ru|rss': 11404, 'www.cnews.ru|inc|rss|news.xml': 7169, 'hibinform.ru|feed|': 170, 'habr.com|ru|rss|all|all|': 2041} ===<=my_rss_data.py->load_newest_feeddirs_directly_to_sql[606]
+2023-01-13 20:15:11,117:INFO.MY_RSS_DATA:INFO=>=== Начало загрузки данных ===<=my_rss_data.py->get_all_rss_data[278]
+2023-01-13 20:15:15,659:INFO.MY_RSS_DATA:INFO=>=== Данные загрузили. Кол-во источников 10 ===<=my_rss_data.py->get_all_rss_data[293]
+2023-01-13 20:15:15,659:INFO.MY_RSS_DATA:INFO=>=== Запись свежих данных в SQL таблицы ===<=my_rss_data.py->load_newest_feeddirs_directly_to_sql[594]
+2023-01-13 20:15:18,944:INFO.MY_RSS_DATA:INFO=>=== Конец записи. Кол-ва записей в таблицах: {'lenta.ru|rss|': 23597, 'www.vedomosti.ru|rss|news': 17003, 'tass.ru|rss|v2.xml': 11542, 'ria.ru|export|rss2|archive|index.xml': 11651, 'www.kommersant.ru|RSS|news.xml': 30240, 'rossaprimavera.ru|rss': 5023, 'regnum.ru|rss': 11504, 'www.cnews.ru|inc|rss|news.xml': 7369, 'hibinform.ru|feed|': 170, 'habr.com|ru|rss|all|all|': 2061} ===<=my_rss_data.py->load_newest_feeddirs_directly_to_sql[606]
+2023-01-13 21:09:10,479:INFO.MY_RSS_DATA:INFO=>=== Начало загрузки данных ===<=my_rss_data.py->get_all_rss_data[278]
+2023-01-13 21:09:15,709:INFO.MY_RSS_DATA:INFO=>=== Данные загрузили. Кол-во источников 10 ===<=my_rss_data.py->get_all_rss_data[293]
+2023-01-13 21:09:15,709:INFO.MY_RSS_DATA:INFO=>=== Запись свежих данных в SQL таблицы ===<=my_rss_data.py->load_newest_feeddirs_directly_to_sql[594]
+2023-01-13 21:09:21,336:INFO.MY_RSS_DATA:INFO=>=== Конец записи. Кол-ва записей в таблицах: {'lenta.ru|rss|': 23797, 'www.vedomosti.ru|rss|news': 17203, 'tass.ru|rss|v2.xml': 11640, 'ria.ru|export|rss2|archive|index.xml': 11750, 'www.kommersant.ru|RSS|news.xml': 30696, 'rossaprimavera.ru|rss': 5074, 'regnum.ru|rss': 11603, 'www.cnews.ru|inc|rss|news.xml': 7369, 'hibinform.ru|feed|': 170, 'habr.com|ru|rss|all|all|': 2081} ===<=my_rss_data.py->load_newest_feeddirs_directly_to_sql[606]
+2023-01-13 21:09:36,890:INFO.MY_RSS_DATA:INFO=>Объединенная таблица с данными сформирована.<=my_rss_data.py->cron_vitrine[1019]
+2023-01-13 21:09:37,877:INFO.MY_RSS_DATA:INFO=>Группы категорий загружены.<=my_rss_data.py->cron_vitrine[1023]
+2023-01-13 21:09:41,338:INFO.MY_RSS_DATA:INFO=>Данным присвоены группы категорий.<=my_rss_data.py->cron_vitrine[1028]
+2023-01-13 21:09:42,627:INFO.MY_RSS_DATA:INFO=>Витрина сформирована:
+    За все время по всем источникам,
+    За сутки по всем источникам,
+    За сутки по каждому источнику,
+    За все время по каждому источнику,
+    Среднее за сутки за все время по всем источникам,
+    День максимального кол-ва публикаций по категории.<=my_rss_data.py->cron_vitrine[1034]
