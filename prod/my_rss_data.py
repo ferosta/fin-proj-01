@@ -959,6 +959,140 @@ if "DEBUG" in logger.name:
     res = make_vitrine_01_04()
 # print (res)
 
+# %% tags=[]
+def make_vitrine_01_05(vitrine_name='vitrine_05'):
+    """
+        -- Промежуточный результат: Витрина с данными задачи №01 и №02 03 04 05
+        -- выполнение одним запросом без сохранения промежуточных таблиц
+    """
+    # TODO: надо бы еще формирование списков источников сделать динамическим
+    #
+    q = f"""
+        -- Задание №3: Общее количество новостей из всех источников по данной категории за последние сутки
+        -- Промежуточный результат: исходные данные с результатами №01 и №02 и №03 для сводной таблицы - витрины 
+        -- цифры перед названием "все источники" нужны для правильного порядка вывода при формировании сводной таблицы
+        DROP TABLE IF EXISTS data_00_05;
+        WITH
+         src_list AS (SELECT DISTINCT "source" AS "Источник" FROM {MAIN_TABLE_NAME}_cat ORDER BY "Источник") --список источников
+        ,cat_list AS (SELECT DISTINCT cat_group AS "Категория" FROM {MAIN_TABLE_NAME}_cat ORDER BY "Категория")-- список категорий
+        ,cat_nlist AS(SELECT ROW_NUMBER() OVER() AS "N", "Категория"   FROM cat_list) -- нумерованный список категорий
+        ,all_src AS  (SELECT cat_group AS "Категория", '0Все источники' AS "Источник", count(*) AS "Всего новостей" -- цифра нужня для порядка колонок
+                      FROM {MAIN_TABLE_NAME}_cat GROUP BY cat_group ORDER BY cat_group)
+        ,each_src AS (SELECT cat_group AS "Категория", "source" as "Источник", count(*) AS "Всего новостей"
+                      FROM {MAIN_TABLE_NAME}_cat GROUP BY "Категория", "Источник" ORDER BY "Категория", "Источник")
+        ,day_all_src AS (SELECT cat_list."Категория", '1День - Все источники' AS "Источник" , "Всего новостей" --цифра нужна для порядка колонок
+				 FROM (SELECT cat_group AS "Категория", '1День - Все источники' AS "Источник" , count(*) AS "Всего новостей"	
+					   FROM {MAIN_TABLE_NAME}_cat WHERE  publish_date > NOW() - INTERVAL '24 hours' GROUP BY "Категория") AS day_all_src -- выборка новостей за день
+				 RIGHT JOIN (SELECT * FROM cat_list) AS cat_list -- полный список категорий
+				 ON day_all_src."Категория" = cat_list."Категория")
+        ,day_each_src AS (
+				SELECT   CASE WHEN cat_list."Категория" != '[NULL]' -- дополняем до полного списка первым в списке
+							   THEN cat_list."Категория"
+							   ELSE (SELECT * FROM cat_list LIMIT 1) END AS "Категория"
+						, 7||src_list."Источник"  -- дополняем до полного списка первым в списке
+						, "Всего новостей" 
+				FROM (SELECT cat_group AS "Категория", "source" as "Источник" , count(*) AS "Всего новостей"	
+					  FROM {MAIN_TABLE_NAME}_cat WHERE  publish_date > NOW() - INTERVAL '24 hours' GROUP BY "Категория", "Источник"
+				  	 ) AS day_list_each_src -- выборка новостей по каждому источнику за день
+				RIGHT JOIN -- дополняем до полного списка категорий
+					 (SELECT DISTINCT cat_group AS "Категория" FROM {MAIN_TABLE_NAME}_cat ORDER BY "Категория") AS cat_list 
+				ON day_list_each_src."Категория" = cat_list."Категория"
+				RIGHT JOIN -- дополняем до полного списка источников
+					 (SELECT DISTINCT "source" AS "Источник" FROM {MAIN_TABLE_NAME}_cat ORDER BY "Источник") AS src_list
+				ON day_list_each_src."Источник" = src_list."Источник"
+				ORDER BY cat_list."Категория", src_list."Источник" )
+        ,day_avg_cat AS ( 
+				SELECT cat_group AS "Категория", '5День - Все источники' AS "Источник", avg("количество")::integer AS "4День: Среднее кол-во"
+				FROM (SELECT cat_group -- расфасовка категорий новостей по дням
+							,(extract(epoch from NOW())::integer 
+							 - extract(epoch from publish_date)::integer)
+							 /60/60/24 AS day_num -- номер дня: разница текущего таймстампа и таймстампа публикации 
+							, count(*) AS "количество"
+					FROM {MAIN_TABLE_NAME}_cat mc 
+					GROUP BY cat_group , day_num
+					) AS cat_group_days
+				GROUP BY cat_group ORDER BY cat_group)
+            SELECT * 
+            INTO data_00_05
+            FROM all_src -- все источники за все время
+        UNION
+            SELECT * FROM each_src -- каждый источник за все время
+        UNION 
+            SELECT * FROM day_all_src -- все источники за сутки
+        UNION 
+            SELECT * FROM day_each_src -- каждый источник за сутки
+        UNION 
+            SELECT * FROM day_avg_cat  -- среднее за сутки все источники 
+        ORDER BY "Категория","Источник";
+        -------------------------------------------------------------------------
+        -- из сохранненой таблицы с объединенными данными делаем сводную таблицу
+        DROP TABLE IF EXISTS {vitrine_name};
+        SELECT * 
+        INTO {vitrine_name}
+        FROM 
+        crosstab($$SELECT * FROM data_00_05 $$ -- выборка ключ-категория-значение
+                ,$$SELECT DISTINCT "Источник" FROM data_00_05 ORDER BY "Источник" $$ --полный список категорий (столбцов)
+        ) AS ct ( -- как сделать этот список динамически формируемым - пока не знаю
+         "Категория" TEXT
+		,"Всё время: Все источники" INT8
+		,"Сутки: Все источники" INT8
+        ,"Среднее за сутки: Все источники" INT8
+		,"День: 3habr.com|ru|rss|all|all|" INT8
+		,"День: hibinform.ru|feed|" INT8
+		,"День: lenta.ru|rss|" INT8
+		,"День: regnum.ru|rss" INT8
+		,"День: ria.ru|export|rss2|archive|index.xml" INT8
+		,"День: rossaprimavera.ru|rss" INT8
+		,"День: tass.ru|rss|v2.xml" INT8
+		,"День: www.cnews.ru|inc|rss|news.xml" INT8
+		,"День: www.kommersant.ru|RSS|news.xml" INT8
+		,"День: www.vedomosti.ru|rss|news" INT8
+		,"habr.com|ru|rss|all|all|" INT8
+		,"hibinform.ru|feed|" INT8
+		,"lenta.ru|rss|" INT8
+		,"regnum.ru|rss" INT8
+		,"ria.ru|export|rss2|archive|index.xml" INT8
+		,"rossaprimavera.ru|rss" INT8
+		,"tass.ru|rss|v2.xml" INT8
+		,"www.cnews.ru|inc|rss|news.xml" INT8
+		,"www.kommersant.ru|RSS|news.xml" INT8
+		,"www.vedomosti.ru|rss|news" INT8
+                );
+        COMMIT;
+     """
+    
+    
+    res = SQL_ENGINE.execute(q)
+    # conn = SQL_ENGINE.connect()
+    # res = conn.execute(q)
+    # res = conn.execute("""SELECT * FROM vitrine_03""")
+    # conn.commit_prepared()
+    # conn.close()
+    
+    # logger.debug(f'суппер-пуупер запрос: {res.rowcount}')
+
+   
+    logger.debug(f'Сформирована витрина ({vitrine_name}) по п.1 и п.2. Всего записей: {res.rowcount}')
+    # logger.debug(f'записей: {res.all()}')
+    
+    # сохраняем витрину в файл 
+    now_timestamp = int(datetime.now().timestamp())
+    vitrine_dir = os.path.join(RUN_DIR, "vitrines")
+    vitrine_filename = os.path.join(vitrine_dir, str(now_timestamp) + '-vitrine.csv')
+    
+    df = pd.read_sql(f"SELECT * FROM {vitrine_name}", SQL_ENGINE)
+    df.to_csv(vitrine_filename )
+    logger.debug(f'Витрина сохранена в файл {vitrine_filename}')
+    
+    
+    return res
+    
+#тест
+res = ''
+if "DEBUG" in logger.name:
+    res = make_vitrine_01_05()
+# print (res)
+
 # %% [markdown]
 # # ** **CRON**: Формирование главной витрины
 
@@ -983,12 +1117,13 @@ def cron_vitrine():
     # формирование витрины для первых двух заданий: 
     # 01 : КАЖДАЯ категория, ВСЕ источники, ВСЕ дни
     # 02 : КАЖДАЯ категория, КАЖДЫЙ источник, ВСЕ дни 
-    make_vitrine_01_04()
+    make_vitrine_01_05()
     logger.info('Витрина сформирована:\n\
     За все время по всем источникам,\n\
     За сутки по всем источникам,\n\
     За сутки по каждому источнику,\n\
-    За все время по каждому источнику')
+    За все время по каждому источнику,\n\
+    Среднее за сутки за все время по всем источникам.')
     
     
 #тест

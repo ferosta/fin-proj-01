@@ -2117,3 +2117,7 @@
     За сутки по всем источникам,
     За сутки по каждому источнику,
     За все время по каждому источнику<=308869249.py->cron_vitrine[22]
+2023-01-13 19:10:52,980:DEBUG.MY_RSS_DATA:DEBUG=>Сформирована витрина (vitrine_05) по п.1 и п.2. Всего записей: -1<=154104524.py->make_vitrine_01_05[113]
+2023-01-13 19:10:53,942:DEBUG.MY_RSS_DATA:DEBUG=>Витрина сохранена в файл /home/fedorov/mypy/dataeng/fin-prj-01/vitrines/1673626252-vitrine.csv<=154104524.py->make_vitrine_01_05[123]
+2023-01-13 19:12:23,055:DEBUG.MY_RSS_DATA:DEBUG=>Сформирована витрина (vitrine_05) по п.1 и п.2. Всего записей: -1<=1111734146.py->make_vitrine_01_05[113]
+2023-01-13 19:12:23,136:DEBUG.MY_RSS_DATA:DEBUG=>Витрина сохранена в файл /home/fedorov/mypy/dataeng/fin-prj-01/vitrines/1673626343-vitrine.csv<=1111734146.py->make_vitrine_01_05[123]
